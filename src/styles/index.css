@@ -1,0 +1,5 @@
+/* Oculta el ícono nativo “reveal password” (Edge / IE) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+}
