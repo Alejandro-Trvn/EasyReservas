@@ -11,10 +11,10 @@ import ProtectedRoute from "../auth/ProtectedRoute";
 import { Layout } from "../components/layout/Layout";
 import UsuariosPage from "../pages/usuarios/Usuarios";
 import TipoRecursosPage from "../pages/tipoRecursos/tipoRecursosPage";
+import RecursosPage from "../pages/recursos/Recursos";
 
 // Páginas placeholder (hasta que conectes APIs)
 const ReservasPage = () => <div>Reservas (pendiente)</div>;
-const RecursosPage = () => <div>Recursos (pendiente)</div>;
 // Usuarios page is imported above
 const NotificacionesPage = () => <div>Notificaciones (pendiente)</div>;
 
