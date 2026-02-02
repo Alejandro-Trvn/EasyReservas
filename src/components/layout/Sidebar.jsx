@@ -53,6 +53,12 @@ const MENU_MODULES = [
         icon: Users,
         rolesPermitidos: ["admin"],
       },
+      {
+        label: "Tipo de Recursos",
+        path: "/tipo-recursos",
+        icon: Layers,
+        rolesPermitidos: ["admin"],
+      },
     ],
   },
   {

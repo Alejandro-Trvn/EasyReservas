@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { listarUsuarios, crearUsuario } from "./usuariosService";
+import { listarUsuarios, crearUsuario, eliminarUsuario } from "./usuariosService";
 
 export default function useUsuarios() {
 	const [usuarios, setUsuarios] = useState([]);
@@ -38,9 +38,27 @@ export default function useUsuarios() {
 		[fetchUsuarios]
 	);
 
+	const deleteUsuario = useCallback(
+		async (id) => {
+			setLoading(true);
+			setError(null);
+			try {
+				const data = await eliminarUsuario(id);
+				await fetchUsuarios();
+				return data;
+			} catch (err) {
+				setError(err);
+				throw err;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[fetchUsuarios]
+	);
+
 	useEffect(() => {
 		fetchUsuarios();
 	}, [fetchUsuarios]);
 
-	return { usuarios, loading, error, refetch: fetchUsuarios, createUsuario };
+	return { usuarios, loading, error, refetch: fetchUsuarios, createUsuario, deleteUsuario };
 }

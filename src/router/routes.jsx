@@ -10,6 +10,7 @@ import DashboardPage from "../pages/Dashboard";
 import ProtectedRoute from "../auth/ProtectedRoute";
 import { Layout } from "../components/layout/Layout";
 import UsuariosPage from "../pages/usuarios/Usuarios";
+import TipoRecursosPage from "../pages/tipoRecursos/tipoRecursosPage";
 
 // Páginas placeholder (hasta que conectes APIs)
 const ReservasPage = () => <div>Reservas (pendiente)</div>;
@@ -35,6 +36,7 @@ export const routes = [
             { path: "dashboard", element: <DashboardPage /> },
             { path: "reservas", element: <ReservasPage /> },
             { path: "recursos", element: <RecursosPage /> },
+            { path: "tipo-recursos", element: <TipoRecursosPage /> },
             { path: "usuarios", element: <UsuariosPage /> },
             { path: "notificaciones", element: <NotificacionesPage /> },
             { path: "configuracion", element: <ConfiguracionPage /> },
