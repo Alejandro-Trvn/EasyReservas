@@ -6,8 +6,10 @@ import Paginador from "../../components/Table/Paginador";
 import ScreenLoader from "../../components/ScreenLoader";
 import Alert, { showAlert } from "../../components/Alert";
 import { FiEdit, FiTrash2 } from "react-icons/fi";
+import { FiEye } from "react-icons/fi";
 import Button from "../../components/Button";
 import CrearEditarRecursos from "./CrearEditarRecursos";
+import VerificarDisponibilidad from "./VerificarDisponibilidad";
 import useRecursos from "../../services/recursos/useRecursos";
 import { useAuth } from "../../context/AuthContext";
 
@@ -16,8 +18,11 @@ const Recursos = () => {
   const { user, role: contextRole } = useAuth();
   const role = (contextRole || user?.role || "").toString().toLowerCase();
   const isAdmin = role === "admin";
+  const isViewer = role === "admin" || role === "usuario";
   const [openModal, setOpenModal] = React.useState(false);
   const [editingResource, setEditingResource] = React.useState(null);
+  const [openDisponibilidad, setOpenDisponibilidad] = React.useState(false);
+  const [selectedRecurso, setSelectedRecurso] = React.useState(null);
   const [processing, setProcessing] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -58,8 +63,8 @@ const Recursos = () => {
     { key: "estado", title: "Estado", align: "center", width: "100px" },
   ];
 
-  const columns = isAdmin
-    ? [...baseColumns, { key: "actions", title: "Acciones", align: "center", width: "120px" }]
+  const columns = isViewer
+    ? [...baseColumns, { key: "actions", title: "Acciones", align: "center", width: "160px" }]
     : baseColumns;
 
   const rows = (visible || []).map((r) => {
@@ -79,15 +84,22 @@ const Recursos = () => {
         ),
     };
 
-    if (isAdmin) {
+    if (isViewer) {
       row.actions = (
         <div className="flex items-center justify-center gap-2">
-          <button onClick={() => handleEdit(r)} title="Editar" className="p-2 rounded-md text-sky-600 hover:bg-sky-50">
-            <FiEdit />
+          <button onClick={() => handleViewAvailability(r)} title="Ver Disponibilidad" className="p-2 rounded-md text-amber-600 hover:bg-amber-50">
+            <FiEye />
           </button>
-          <button onClick={() => handleDelete(r)} title="Eliminar" className="p-2 rounded-md text-red-600 hover:bg-red-50">
-            <FiTrash2 />
-          </button>
+          {isAdmin && (
+            <>
+              <button onClick={() => handleEdit(r)} title="Editar" className="p-2 rounded-md text-sky-600 hover:bg-sky-50">
+                <FiEdit />
+              </button>
+              <button onClick={() => handleDelete(r)} title="Eliminar" className="p-2 rounded-md text-red-600 hover:bg-red-50">
+                <FiTrash2 />
+              </button>
+            </>
+          )}
         </div>
       );
     }
@@ -98,6 +110,11 @@ const Recursos = () => {
   function handleEdit(r) {
     setEditingResource(r);
     setOpenModal(true);
+  }
+
+  function handleViewAvailability(r) {
+    setSelectedRecurso(r);
+    setOpenDisponibilidad(true);
   }
 
   function handleDelete(r) {
@@ -201,6 +218,14 @@ const Recursos = () => {
                   setOpenModal(false);
                   setEditingResource(null);
                 }
+              }}
+            />
+            <VerificarDisponibilidad
+              isOpen={openDisponibilidad}
+              recurso={selectedRecurso}
+              onClose={() => {
+                setOpenDisponibilidad(false);
+                setSelectedRecurso(null);
               }}
             />
             <ScreenLoader loading={processing} message={"Guardando cambios..."} />

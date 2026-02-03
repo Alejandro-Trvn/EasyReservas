@@ -36,4 +36,15 @@ export async function eliminarRecurso(id) {
   }
 }
 
-export default { listarRecursos, crearRecurso, editarRecurso, eliminarRecurso };
+export async function verificarDisponibilidadRecurso(id, fecha_inicio, fecha_fin) {
+  try {
+    const res = await api.get(`/recursos/${id}/disponibilidad`, {
+      params: { fecha_inicio, fecha_fin },
+    });
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export default { listarRecursos, crearRecurso, editarRecurso, eliminarRecurso, verificarDisponibilidadRecurso };

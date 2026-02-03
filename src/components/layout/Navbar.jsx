@@ -1,7 +1,8 @@
 // src/components/layout/Navbar.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Bell, Settings, LogOut, ChevronDown } from "lucide-react";
+import { Search, Bell, Settings, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { useSidebar } from "../../context/SidebarContext";
 import { useAuth } from "../../context/AuthContext";
 
 export const Navbar = () => {
@@ -42,10 +43,21 @@ export const Navbar = () => {
         }
     };
 
+    const { isCollapsed, toggleSidebar } = useSidebar();
+
     return (
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
             {/* Search */}
-            <div className="flex-1 max-w-xl">
+            <div className="flex items-center gap-3">
+                <button
+                    type="button"
+                    onClick={toggleSidebar}
+                    className="p-2 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                    title={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+                >
+                    {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                </button>
+                <div className="flex-1 max-w-xl">
                 <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Search className="h-4 w-4 text-gray-400" />
@@ -56,6 +68,7 @@ export const Navbar = () => {
                         className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 sm:text-sm transition duration-150 ease-in-out"
                         placeholder="Buscar en el sistema..."
                     />
+                </div>
                 </div>
             </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { listarRecursos, crearRecurso, editarRecurso, eliminarRecurso } from "./recursosServices";
+import { listarRecursos, crearRecurso, editarRecurso, eliminarRecurso, verificarDisponibilidadRecurso } from "./recursosServices";
 
 export default function useRecursos() {
   const [recursos, setRecursos] = useState([]);
@@ -68,5 +68,19 @@ export default function useRecursos() {
     }
   }
 
-  return { recursos, loading, error, refetch: fetchRecursos, createRecurso, updateRecurso, deleteRecurso };
+  async function checkDisponibilidad(id, fecha_inicio, fecha_fin) {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await verificarDisponibilidadRecurso(id, fecha_inicio, fecha_fin);
+      return data;
+    } catch (err) {
+      setError(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return { recursos, loading, error, refetch: fetchRecursos, createRecurso, updateRecurso, deleteRecurso, checkDisponibilidad };
 }

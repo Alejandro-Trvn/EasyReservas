@@ -1,5 +1,5 @@
 // src/components/layout/Sidebar.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -15,6 +15,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import clsx from "clsx";
+import { useSidebar } from "../../context/SidebarContext";
 
 const MENU_MODULES = [
   {
@@ -81,7 +82,11 @@ export const Sidebar = () => {
   const { user, loading, role: contextRole } = useAuth();
   const location = useLocation();
   const [expandedModules, setExpandedModules] = useState({});
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed } = useSidebar();
+
+  useEffect(() => {
+    if (isCollapsed) setExpandedModules({});
+  }, [isCollapsed]);
 
   const role = (contextRole || user?.role || "").toString().toLowerCase();
 
@@ -110,12 +115,6 @@ export const Sidebar = () => {
     setExpandedModules((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
-  const toggleSidebar = () => {
-    setIsCollapsed((prev) => !prev);
-    // al colapsar, cerrar módulos
-    if (!isCollapsed) setExpandedModules({});
-  };
-
   // ✅ Render seguro: si está cargando o sin user, no rompas Hooks.
   if (loading) return null;
   if (!user) return null;
@@ -140,44 +139,15 @@ export const Sidebar = () => {
             isCollapsed && "flex-col gap-1"
           )}
         >
-          <span className="text-3xl">🌱</span>
+          <span className="text-2xl">👨‍🎓</span>
           {!isCollapsed && (
-            <span>
-              Easy-Reservas <span className="text-emerald-400">UNI</span>
-            </span>
+            <span className="text-white text-2xl">Easy-Reservas</span>
           )}
         </div>
-
-        {!isCollapsed && (
-          <div className="text-sm text-emerald-300 mt-1">
-            By: <span className="text-emerald-400">PulsoTek</span>
-          </div>
-        )}
       </div>
 
-      {/* Toggle */}
-      <div className="px-4 py-2 border-b border-emerald-900">
-        <button
-          onClick={toggleSidebar}
-          className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-emerald-900 transition-colors group"
-          title={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
-        >
-          {isCollapsed ? (
-            <PanelLeftOpen
-              size={20}
-              className="text-emerald-300 group-hover:text-white"
-            />
-          ) : (
-            <div className="flex items-center justify-between w-full">
-              <span className="text-sm text-emerald-300">Menu</span>
-              <PanelLeftClose
-                size={20}
-                className="text-emerald-300 group-hover:text-white"
-              />
-            </div>
-          )}
-        </button>
-      </div>
+      {/* Spacer for header separation */}
+      <div className="px-4 py-2 border-b border-emerald-900" />
 
       {/* Nav */}
       <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto sidebar-scrollbar">

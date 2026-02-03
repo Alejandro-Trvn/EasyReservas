@@ -12,9 +12,8 @@ import { Layout } from "../components/layout/Layout";
 import UsuariosPage from "../pages/usuarios/Usuarios";
 import TipoRecursosPage from "../pages/tipoRecursos/tipoRecursosPage";
 import RecursosPage from "../pages/recursos/Recursos";
+import ReservasPage from "../pages/reservas/Reservas";
 
-// Páginas placeholder (hasta que conectes APIs)
-const ReservasPage = () => <div>Reservas (pendiente)</div>;
 // Usuarios page is imported above
 const NotificacionesPage = () => <div>Notificaciones (pendiente)</div>;
 
