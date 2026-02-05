@@ -1,5 +1,5 @@
 // src/components/layout/Sidebar.jsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -75,6 +75,25 @@ const MENU_MODULES = [
       },
     ],
   },
+  {
+    label: "Estadísticas",
+    icon: PanelLeftOpen,
+    rolesPermitidos: ["admin", "usuario"],
+    items: [
+      {
+        label: "Uso del sistema",
+        path: "/estadisticas/uso-sistema",
+        icon: PanelLeftOpen,
+        rolesPermitidos: ["admin", "usuario"],
+      },
+      {
+        label: "Usuarios y Recursos",
+        path: "/estadisticas/usuarios-recursos",
+        icon: Users,
+        rolesPermitidos: ["admin", "usuario"],
+      },
+    ],
+  },
 ];
 
 export const Sidebar = () => {
@@ -119,6 +138,30 @@ export const Sidebar = () => {
   if (loading) return null;
   if (!user) return null;
 
+  const [hoveredModule, setHoveredModule] = useState(null);
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+  const hideTimer = useRef(null);
+
+  function clearHideTimer() {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+  }
+
+  function showPopoverForModule(module, e) {
+    if (!isCollapsed) return;
+    clearHideTimer();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopoverPos({ top: rect.top + window.scrollY, left: rect.right + 8 });
+    setHoveredModule(module);
+  }
+
+  function hidePopover(delay = 400) {
+    clearHideTimer();
+    hideTimer.current = setTimeout(() => setHoveredModule(null), delay);
+  }
+
   return (
     <div
       className={clsx(
@@ -139,7 +182,7 @@ export const Sidebar = () => {
             isCollapsed && "flex-col gap-1"
           )}
         >
-          <span className="text-2xl">👨‍🎓</span>
+          <span className="text-2xl inline-block p-1 rounded-full bg-white ring-2 ring-emerald-400/30 shadow-[0_0_12px_rgba(16,185,129,0.35)]">👨‍🎓</span>
           {!isCollapsed && (
             <span className="text-white text-2xl">Easy-Reservas</span>
           )}
@@ -169,6 +212,8 @@ export const Sidebar = () => {
                     : "text-emerald-100 hover:bg-emerald-900 hover:text-white"
                 )}
                 title={isCollapsed ? module.label : undefined}
+                onMouseEnter={(e) => showPopoverForModule(module, e)}
+                onMouseLeave={hidePopover}
               >
                 <Icon
                   size={20}
@@ -207,6 +252,8 @@ export const Sidebar = () => {
                     : "text-emerald-100 hover:bg-emerald-900 hover:text-white"
                 )}
                 title={isCollapsed ? module.label : undefined}
+                onMouseEnter={(e) => showPopoverForModule(module, e)}
+                onMouseLeave={hidePopover}
               >
                 <div
                   className={clsx(
@@ -245,6 +292,8 @@ export const Sidebar = () => {
                             ? "bg-white text-emerald-950 shadow-md font-semibold"
                             : "text-emerald-200 hover:bg-emerald-900 hover:text-white"
                         )}
+                        onMouseEnter={() => setHoveredModule(null)}
+                        onMouseLeave={() => setHoveredModule(null)}
                       >
                         <ItemIcon
                           size={18}
@@ -265,6 +314,43 @@ export const Sidebar = () => {
           );
         })}
       </nav>
+      {/* Popover shown when collapsed */}
+      {isCollapsed && hoveredModule && (
+        <div
+          onMouseEnter={() => clearHideTimer()}
+          onMouseLeave={() => hidePopover()}
+          onFocus={() => clearHideTimer()}
+          onBlur={() => hidePopover()}
+          onMouseDown={() => clearHideTimer()}
+          style={{ position: "fixed", top: popoverPos.top, left: popoverPos.left, zIndex: 9999 }}
+        >
+          <div className="w-56 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md text-white shadow-lg">
+            <div className="p-3 border-b border-blue-300">
+              <div className="flex items-center gap-2 font-semibold text-amber-400">
+                {hoveredModule.icon ? (
+                  React.createElement(hoveredModule.icon, { size: 16, className: "text-amber-400" })
+                ) : null}
+                <span>{hoveredModule.label}</span>
+              </div>
+            </div>
+
+            <div className="p-3">
+              {hoveredModule.items && hoveredModule.items.length > 0 ? (
+                <div className="space-y-2 text-sm text-black">
+                  {hoveredModule.items.map((it) => (
+                    <Link key={it.path} to={it.path} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-red-300">
+                      {it.icon ? React.createElement(it.icon, { size: 14, className: "text-black" }) : null}
+                      <span className="truncate">{it.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-black p-1">{hoveredModule.label}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

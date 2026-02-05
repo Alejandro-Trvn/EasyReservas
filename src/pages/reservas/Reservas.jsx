@@ -25,7 +25,7 @@ const Reservas = () => {
 
   const normalized = (searchTerm || "").toString().trim().toLowerCase();
   const filtered = (reservas || []).filter((r) => {
-    // determine cancelled status using reservation `estado` first
+    // determine status using reservation `estado` first
     const isCancelled = (() => {
       if (!r) return false;
       const resEstado = (r.estado || "").toString().toLowerCase();
@@ -40,8 +40,19 @@ const Reservas = () => {
       return false;
     })();
 
-    if (statusFilter === "active" && isCancelled) return false;
+    const isFinalized = (() => {
+      if (!r) return false;
+      const resEstado = (r.estado || "").toString().toLowerCase();
+      if (resEstado === "finalizada" || resEstado === "finalizado" || resEstado === "finished" || resEstado.includes("final")) return true;
+      if (r.finalizado === true || r.finalizado === 1) return true;
+      // numeric fallback (if backend uses codes)
+      if (r.estado === 2) return true;
+      return false;
+    })();
+
+    if (statusFilter === "active" && (isCancelled || isFinalized)) return false;
     if (statusFilter === "cancelled" && !isCancelled) return false;
+    if (statusFilter === "finalized" && !isFinalized) return false;
 
     if (!normalized) return true;
     const recursoNombre = (r.recurso?.nombre || "").toString().toLowerCase();
@@ -133,6 +144,15 @@ const Reservas = () => {
       return false;
     })();
 
+    const isFinalized = (() => {
+      if (!r) return false;
+      const resEstado = (r.estado || "").toString().toLowerCase();
+      if (resEstado === "finalizada" || resEstado === "finalizado" || resEstado === "finished" || resEstado.includes("final")) return true;
+      if (r.finalizado === true || r.finalizado === 1) return true;
+      if (r.estado === 2) return true;
+      return false;
+    })();
+
     return {
       id: r.id,
       recurso: (
@@ -155,6 +175,8 @@ const Reservas = () => {
         <div className="text-center">
           {isCancelled ? (
             <span className="text-sm font-medium text-red-600">Cancelada</span>
+          ) : isFinalized ? (
+            <span className="text-sm font-medium text-amber-600">Finalizada</span>
           ) : (
             <span className="text-sm font-medium text-emerald-600">Activa</span>
           )}
@@ -252,6 +274,11 @@ const Reservas = () => {
                       onClick={() => setStatusFilter("cancelled")}
                       className={`px-3 py-1 text-sm rounded-md ${statusFilter === "cancelled" ? "bg-white text-slate-900 shadow-sm" : "text-gray-600 hover:bg-white"}`}>
                       Canceladas
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter("finalized")}
+                      className={`px-3 py-1 text-sm rounded-md ${statusFilter === "finalized" ? "bg-white text-slate-900 shadow-sm" : "text-gray-600 hover:bg-white"}`}>
+                      Finalizadas
                     </button>
                   </div>
                 </div>

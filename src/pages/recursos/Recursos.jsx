@@ -183,7 +183,7 @@ const Recursos = () => {
               </div>
             ) : (
               <>
-                <TablaMinimalista columns={columns} rows={rows} dotKeys={[]} bodyClassName="text-xs text-slate-700" headerBg={"bg-amber-100 border-b border-amber-600"} />
+                <TablaMinimalista columns={columns} rows={rows} dotKeys={[]} bodyClassName="text-xs text-slate-700" headerBg={"bg-blue-100 border-b border-blue-600"} />
                 <div className="p-4">
                   <Paginador totalItems={totalItems} pageSize={pageSize} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
                 </div>

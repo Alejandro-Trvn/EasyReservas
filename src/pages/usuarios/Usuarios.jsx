@@ -190,7 +190,7 @@ export default function Usuarios() {
                   // No usamos dot para 'estado' porque renderizamos un botón
                   dotKeys={[]}
                   bodyClassName="text-xs text-slate-700"
-                  headerBg={"bg-amber-100 border-b border-amber-600"}
+                  headerBg={"bg-blue-100 border-b border-blue-600"}
                 />
                 <div className="p-4">
                   <Paginador

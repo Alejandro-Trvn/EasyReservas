@@ -13,6 +13,8 @@ import UsuariosPage from "../pages/usuarios/Usuarios";
 import TipoRecursosPage from "../pages/tipoRecursos/tipoRecursosPage";
 import RecursosPage from "../pages/recursos/Recursos";
 import ReservasPage from "../pages/reservas/Reservas";
+import EstadisticasPage from "../pages/estadisticas/EstadisticasPage";
+import UsuariosRecursosPage from "../pages/estadisticas/UsuariosRecursosPage";
 
 // Usuarios page is imported above
 const NotificacionesPage = () => <div>Notificaciones (pendiente)</div>;
@@ -34,6 +36,8 @@ export const routes = [
         children: [
             { path: "dashboard", element: <DashboardPage /> },
             { path: "reservas", element: <ReservasPage /> },
+            { path: "estadisticas/uso-sistema", element: <EstadisticasPage /> },
+            { path: "estadisticas/usuarios-recursos", element: <UsuariosRecursosPage /> },
             { path: "recursos", element: <RecursosPage /> },
             { path: "tipo-recursos", element: <TipoRecursosPage /> },
             { path: "usuarios", element: <UsuariosPage /> },
