@@ -82,34 +82,27 @@ export default function Alert() {
   const Icon = cfg.icon;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={() => {
-          if (!opts.preventOutsideClose) handleClose(false);
-        }}
-      />
-
-      <div className="relative z-10 max-w-xl w-full mx-4">
-        <div className="bg-white rounded-lg shadow-xl p-6">
-          <div className="flex items-start gap-4">
-            <div className={clsx("p-3 rounded-full", cfg.bg)}>
-              <Icon className={clsx(cfg.iconColor, "w-6 h-6")} />
+    <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-3">
+      <div className="relative z-10 max-w-xs w-full">
+        <div className={clsx(cfg.bg, "rounded-lg shadow-md p-3")}> 
+          <div className="flex items-start gap-3">
+            <div className={clsx("p-2 rounded-full bg-white/20")}> 
+              <Icon className={clsx(cfg.iconColor, "w-5 h-5")} />
             </div>
 
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900">{opts.title}</h3>
+              <h3 className="text-sm font-semibold text-gray-900">{opts.title}</h3>
               {opts.text && (
-                <p className="mt-2 text-sm text-gray-600">{opts.text}</p>
+                <p className="mt-1 text-sm text-gray-800">{opts.text}</p>
               )}
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="mt-3 flex justify-end gap-2">
             {opts.showCancel && (
               <button
                 onClick={() => handleClose(false)}
-                className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200"
+                className="px-3 py-1 rounded-md bg-white/30 text-gray-800 hover:bg-white/40"
               >
                 {opts.cancelText}
               </button>
@@ -117,7 +110,7 @@ export default function Alert() {
 
             <button
               onClick={() => handleClose(true)}
-              className="px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+              className="px-3 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
             >
               {opts.confirmText}
             </button>

@@ -8,6 +8,7 @@ import React from "react";
  * - rows: [{ id?: string|number, feature: "First Row", col1: true, col2: "warn", ... }]
  * - dotKeys: string[] -> keys que se renderizan como puntos (dot)
  * - getDotState: (value, row, colKey) => "on" | "off" | "warn" | "muted"
+ * - bodyClassName: string -> classes aplicadas al texto de las celdas del cuerpo (p.e. "text-xs text-slate-700")
  */
 export default function TablaMinimalista({
     columns = [],
@@ -17,6 +18,8 @@ export default function TablaMinimalista({
     className = "",
     // Background class for header row (default bg-amber-50)
     headerBg = "bg-amber-50",
+    // Classes applied to table body text (default: small)
+    bodyClassName = "text-sm text-slate-700",
 }) {
     const alignClass = (align) => {
         if (align === "right") return "text-right";
@@ -93,9 +96,9 @@ export default function TablaMinimalista({
                                 return (
                                     <td
                                         key={`${row.id ?? idx}-${c.key}`}
-                                        className={`px-4 py-3 text-sm text-slate-700 ${alignClass(
-                                            c.align
-                                        )}`}
+                                        className={`px-4 py-3 ${bodyClassName} ${alignClass(
+                                                c.align
+                                            )}`}
                                     >
                                         {isDot ? (
                                             <div className="flex justify-center">

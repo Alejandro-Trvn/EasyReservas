@@ -7,10 +7,15 @@ export const Modal = ({
     title,
     children,
     size = "md",
-
     // ✅ nuevas props opcionales
+    subtitle = null,
+    wrapperClassName = "",
     lockScrollX = false,
     contentClassName = "",
+    // header customization
+    headerBg = "bg-amber-100",
+    headerTextColor = "text-gray-900",
+    headerTextAlign = "left", // "left" | "center" | "right"
 }) => {
     if (!isOpen) return null;
 
@@ -35,17 +40,88 @@ export const Modal = ({
 
             <div className="flex min-h-full items-center justify-center p-4">
                 <div
-                    className={`relative bg-white rounded-2xl shadow-xl w-full ${sizeClasses[size]} transform transition-all`}
+                    className={`relative bg-white rounded-2xl shadow-xl w-full ${sizeClasses[size]} transform transition-all ${wrapperClassName}`}
                 >
-                    <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-amber-100 rounded-t-2xl">
-                        <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-                        <button
-                            onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg"
-                        >
-                            <X size={20} />
-                        </button>
-                    </div>
+                    {
+                        (() => {
+                            const titleClasses = ["text-xl font-bold", headerTextColor].join(" ");
+
+                            // header layout variations according to alignment
+                            if (headerTextAlign === "center") {
+                                const headerClasses = [
+                                    "relative p-6 border-b border-gray-100 rounded-t-2xl",
+                                    headerBg,
+                                ].join(" ");
+
+                                return (
+                                    <div className={headerClasses}>
+                                        <div className="w-full text-center">
+                                            <h3 className={titleClasses}>{title}</h3>
+                                            {subtitle && (
+                                                <div className="text-sm text-gray-700 mt-1">{subtitle}</div>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            onClick={onClose}
+                                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg"
+                                        >
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+                                );
+                            }
+
+                            if (headerTextAlign === "right") {
+                                const headerClasses = [
+                                    "flex items-center justify-end p-6 border-b border-gray-100 rounded-t-2xl",
+                                    headerBg,
+                                ].join(" ");
+
+                                return (
+                                    <div className={headerClasses}>
+                                        <div className="text-right mr-4">
+                                            <h3 className={titleClasses}>{title}</h3>
+                                            {subtitle && (
+                                                <div className="text-sm text-gray-700 mt-1">{subtitle}</div>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            onClick={onClose}
+                                            className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg"
+                                        >
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+                                );
+                            }
+
+                            // default: left
+                            const headerClasses = [
+                                "flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 border-b border-gray-100 rounded-t-2xl",
+                                headerBg,
+                            ].join(" ");
+
+                            return (
+                                <div className={headerClasses}>
+                                    <div className="text-left">
+                                        <h3 className={titleClasses}>{title}</h3>
+                                        {subtitle && (
+                                            <div className="text-sm text-gray-700 mt-1">{subtitle}</div>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        onClick={onClose}
+                                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg mt-3 sm:mt-0"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                            );
+                        })()
+                    }
 
                     <div
                         className={[

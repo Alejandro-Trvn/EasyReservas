@@ -5,17 +5,44 @@ import Buscador from "../../components/Table/Buscador";
 import Paginador from "../../components/Table/Paginador";
 import ScreenLoader from "../../components/ScreenLoader";
 import Alert, { showAlert } from "../../components/Alert";
+import Button from "../../components/Button";
+import ClipLoader from "react-spinners/ClipLoader";
+import CrearEditarReservas from "./CrearEditarReservas";
 import { FiEdit, FiTrash2 } from "react-icons/fi";
 import useReservas from "../../services/reservas/useReservas";
+import { useAuth } from "../../context/AuthContext";
 
 const Reservas = () => {
-  const { reservas, loading, error, refetch } = useReservas();
+  const { reservas, loading, error, refetch, cancelReserva } = useReservas();
+  const { isAdmin } = useAuth();
+  const [openCrear, setOpenCrear] = React.useState(false);
+  const [editingReserva, setEditingReserva] = React.useState(null);
+  const [cancellingId, setCancellingId] = React.useState(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [statusFilter, setStatusFilter] = React.useState("active");
   const pageSize = 8;
 
   const normalized = (searchTerm || "").toString().trim().toLowerCase();
   const filtered = (reservas || []).filter((r) => {
+    // determine cancelled status using reservation `estado` first
+    const isCancelled = (() => {
+      if (!r) return false;
+      const resEstado = (r.estado || "").toString().toLowerCase();
+      if (resEstado === "cancelada" || resEstado === "cancelado" || resEstado === "canceled" || resEstado === "cancelled") return true;
+      if (resEstado === "activa" || resEstado === "activo" || resEstado === "active") return false;
+      // fallback to other indicators
+      if (r.cancelado === true || r.cancelado === 1) return true;
+      if (r.canceled === true) return true;
+      if (r.estado === 0) return true; // numeric flag cases
+      const st = (r.status || "").toString().toLowerCase();
+      if (st === "cancelled" || st === "cancelada" || st === "canceled") return true;
+      return false;
+    })();
+
+    if (statusFilter === "active" && isCancelled) return false;
+    if (statusFilter === "cancelled" && !isCancelled) return false;
+
     if (!normalized) return true;
     const recursoNombre = (r.recurso?.nombre || "").toString().toLowerCase();
     const recursoUbic = (r.recurso?.ubicacion || "").toString().toLowerCase();
@@ -34,6 +61,7 @@ const Reservas = () => {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   React.useEffect(() => setCurrentPage(1), [normalized]);
+  React.useEffect(() => setCurrentPage(1), [statusFilter]);
   React.useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [totalPages]);
@@ -53,20 +81,29 @@ const Reservas = () => {
   }
 
   function handleEdit(r) {
-    showAlert({ type: "info", title: "Editar", text: `Editar reserva ${r.id} (no implementado)` });
+    setEditingReserva(r);
+    setOpenCrear(true);
   }
 
   function handleDelete(r) {
     showAlert({
       type: "warning",
-      title: "Confirmar eliminación",
-      text: `Eliminar reserva ${r.id}?`,
+      title: "Confirmar cancelación",
+      text: `¿Deseas cancelar la reserva ${r.id}?`,
       showCancel: true,
-      confirmText: "Eliminar",
-      cancelText: "Cancelar",
+      confirmText: "Cancelar",
+      cancelText: "Volver",
       onConfirm: async () => {
-        // no delete API implemented yet
-        showAlert({ type: "success", title: "OK", text: "Funcionalidad de eliminación no implementada." });
+        setCancellingId(r.id);
+        try {
+          await cancelReserva(r.id);
+          showAlert({ type: "success", title: "Cancelada", text: "Reserva cancelada correctamente." });
+          await refetch();
+        } catch (err) {
+          showAlert({ type: "fail", title: "Error", text: err?.response?.data?.message || err?.message || "Error cancelando reserva." });
+        } finally {
+          setCancellingId(null);
+        }
       },
     });
   }
@@ -79,41 +116,104 @@ const Reservas = () => {
     { key: "fecha_inicio", title: "Fecha inicio" },
     { key: "fecha_fin", title: "Fecha fin" },
     { key: "comentarios", title: "Comentarios" },
+    { key: "estado", title: "Estado", align: "center", width: "120px" },
     { key: "actions", title: "Acciones", align: "center", width: "120px" },
   ];
+  const rows = (visible || []).map((r) => {
+    const isCancelled = (() => {
+      if (!r) return false;
+      const resEstado = (r.estado || "").toString().toLowerCase();
+      if (resEstado === "cancelada" || resEstado === "cancelado" || resEstado === "canceled" || resEstado === "cancelled") return true;
+      if (resEstado === "activa" || resEstado === "activo" || resEstado === "active") return false;
+      if (r.cancelado === true || r.cancelado === 1) return true;
+      if (r.canceled === true) return true;
+      if (r.estado === 0) return true;
+      const st = (r.status || "").toString().toLowerCase();
+      if (st === "cancelled" || st === "cancelada" || st === "canceled") return true;
+      return false;
+    })();
 
-  const rows = (visible || []).map((r) => ({
-    id: r.id,
-    recurso: r.recurso?.nombre || "—",
-    ubicacion: r.recurso?.ubicacion || "—",
-    usuario: r.user?.name || "—",
-    email: r.user?.email || "—",
-    fecha_inicio: formatDateTime(r.fecha_inicio),
-    fecha_fin: formatDateTime(r.fecha_fin),
-    comentarios: r.comentarios || "—",
-    actions: (
-      <div className="flex items-center justify-center gap-2">
-        <button onClick={() => handleEdit(r)} title="Editar" className="p-2 rounded-md text-sky-600 hover:bg-sky-50">
-          <FiEdit />
-        </button>
-        <button onClick={() => handleDelete(r)} title="Eliminar" className="p-2 rounded-md text-red-600 hover:bg-red-50">
-          <FiTrash2 />
-        </button>
-      </div>
-    ),
-  }));
+    return {
+      id: r.id,
+      recurso: (
+        <div className="flex items-center gap-2">
+          {/* {isCancelled ? (
+            <span title="Cancelada" className="w-2 h-2 rounded-full bg-red-500" />
+          ) : (
+            <span className="w-2 h-2 rounded-full bg-transparent" />
+          )} */}
+          <span>{r.recurso?.nombre || "—"}</span>
+        </div>
+      ),
+      ubicacion: r.recurso?.ubicacion || "—",
+      usuario: r.user?.name || "—",
+      email: r.user?.email || "—",
+      fecha_inicio: formatDateTime(r.fecha_inicio),
+      fecha_fin: formatDateTime(r.fecha_fin),
+      comentarios: r.comentarios || "—",
+      estado: (
+        <div className="text-center">
+          {isCancelled ? (
+            <span className="text-sm font-medium text-red-600">Cancelada</span>
+          ) : (
+            <span className="text-sm font-medium text-emerald-600">Activa</span>
+          )}
+        </div>
+      ),
+      actions: (
+        <div className="flex items-center justify-center gap-2">
+          {cancellingId === r.id ? (
+            <div className="p-2">
+              <ClipLoader size={18} color="#059669" />
+            </div>
+          ) : (
+            <>
+              <button onClick={() => handleEdit(r)} title="Editar" className="p-2 rounded-md text-sky-600 hover:bg-sky-50">
+                <FiEdit />
+              </button>
+              <button onClick={() => handleDelete(r)} title="Cancelar Reserva" className="p-2 rounded-md text-red-600 hover:bg-red-50">
+                <FiTrash2 />
+              </button>
+            </>
+          )}
+        </div>
+      ),
+    };
+  });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="bg-blue-100 p-3 rounded-xl">
-          <Calendar size={28} className="text-blue-700" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-100 p-3 rounded-xl">
+            <Calendar size={28} className="text-blue-700" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Reservas</h1>
+            <p className="text-gray-600">Sistema de gestión de reservas</p>
+          </div>
         </div>
+
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reservas</h1>
-          <p className="text-gray-600">Sistema de gestión de reservas</p>
+          <Button onClick={() => { setEditingReserva(null); setOpenCrear(true); }} variant="primary">Crear reserva</Button>
         </div>
       </div>
+
+      <CrearEditarReservas
+        isOpen={openCrear}
+        onClose={() => setOpenCrear(false)}
+        initialData={editingReserva}
+        onSaved={async () => {
+          setOpenCrear(false);
+          setEditingReserva(null);
+          try {
+            await refetch();
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+        disableRecursoSelector={!isAdmin()}
+      />
 
       <Alert />
 
@@ -130,7 +230,32 @@ const Reservas = () => {
         ) : (
           <div className="bg-white rounded-md p-0">
             <div className="p-4">
-              <Buscador value={searchTerm} onChange={(v) => setSearchTerm(v)} placeholder={"Buscar por recurso, usuario o comentarios"} />
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex-1">
+                  <Buscador value={searchTerm} onChange={(v) => setSearchTerm(v)} placeholder={"Buscar por recurso, usuario o comentarios"} />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-gray-600">Mostrar:</div>
+                  <div className="inline-flex rounded-md bg-green-100 p-1">
+                    <button
+                      onClick={() => setStatusFilter("all")}
+                      className={`px-3 py-1 text-sm rounded-md ${statusFilter === "all" ? "bg-white text-slate-900 shadow-sm" : "text-gray-600 hover:bg-white"}`}>
+                      Todas
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter("active")}
+                      className={`px-3 py-1 text-sm rounded-md ${statusFilter === "active" ? "bg-white text-slate-900 shadow-sm" : "text-gray-600 hover:bg-white"}`}>
+                      Activas
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter("cancelled")}
+                      className={`px-3 py-1 text-sm rounded-md ${statusFilter === "cancelled" ? "bg-white text-slate-900 shadow-sm" : "text-gray-600 hover:bg-white"}`}>
+                      Canceladas
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {totalItems === 0 ? (
@@ -139,7 +264,7 @@ const Reservas = () => {
               </div>
             ) : (
               <>
-                <TablaMinimalista columns={columns} rows={rows} dotKeys={[]} headerBg={"bg-amber-100 border-b border-amber-600"} />
+                <TablaMinimalista columns={columns} rows={rows} dotKeys={[]} bodyClassName="text-xs text-slate-700" headerBg={"bg-blue-100 border-b border-blue-600"} />
                 <div className="p-4">
                   <Paginador totalItems={totalItems} pageSize={pageSize} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
                 </div>
