@@ -1,5 +1,6 @@
 import React from "react";
 import { Layers, Search } from "lucide-react";
+import SectionHeader from "../../components/SectionHeader";
 import TablaMinimalista from "../../components/Table/Table";
 import Buscador from "../../components/Table/Buscador";
 import Paginador from "../../components/Table/Paginador";
@@ -141,22 +142,13 @@ const Recursos = () => {
 
   return (
     <div className="space-y-6">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="bg-cyan-100 p-3 rounded-xl">
-                <Layers size={28} className="text-cyan-700" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Recursos</h1>
-                <p className="text-gray-600">Gestión de recursos del sistema</p>
-              </div>
-            </div>
-            {isAdmin && (
-              <div className="shrink-0">
-                <Button onClick={() => setOpenModal(true)}>Nuevo recurso</Button>
-              </div>
-            )}
-          </div>
+      <SectionHeader title="Recursos" subtitle="Gestión de recursos del sistema" Icon={Layers} />
+
+      {isAdmin && (
+        <div className="flex justify-end">
+          <Button onClick={() => setOpenModal(true)}>Nuevo recurso</Button>
+        </div>
+      )}
 
       <Alert />
 

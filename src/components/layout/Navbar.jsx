@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Bell, Settings, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import useNotificaciones from "../../services/notificaciones/useNotificaciones";
 import { useSidebar } from "../../context/SidebarContext";
 import { useAuth } from "../../context/AuthContext";
 
@@ -11,6 +12,10 @@ export const Navbar = () => {
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
+    const bellRef = useRef(null);
+    const notifRef = useRef(null);
+    const [notifPos, setNotifPos] = useState({ top: 0, left: 0 });
 
     const roleLabel = useMemo(() => {
         const r = (user?.role || "").toString().toLowerCase();
@@ -26,8 +31,12 @@ export const Navbar = () => {
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            const target = event.target;
+            if (dropdownRef.current && !dropdownRef.current.contains(target)) {
                 setIsDropdownOpen(false);
+            }
+            if (notifRef.current && !notifRef.current.contains(target) && bellRef.current && !bellRef.current.contains(target)) {
+                setIsNotifOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -44,6 +53,9 @@ export const Navbar = () => {
     };
 
     const { isCollapsed, toggleSidebar } = useSidebar();
+
+    const { notificaciones = [] } = useNotificaciones();
+    const unreadCount = (notificaciones || []).filter((n) => !n.leida).length;
 
     return (
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
@@ -74,13 +86,48 @@ export const Navbar = () => {
 
             {/* Actions */}
             <div className="flex items-center space-x-4">
-                <button
-                    type="button"
-                    className="p-2 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
-                    title="Notificaciones"
-                >
-                    <Bell size={20} />
-                </button>
+                <div className="relative" ref={bellRef}>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const show = !isNotifOpen;
+                            if (show && bellRef.current) {
+                                const r = bellRef.current.getBoundingClientRect();
+                                setNotifPos({ top: r.bottom + window.scrollY + 8, left: r.left + window.scrollX });
+                            }
+                            setIsNotifOpen(show);
+                        }}
+                        className="p-2 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        title="Notificaciones"
+                    >
+                        <Bell size={20} />
+                    </button>
+
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                    )}
+                </div>
+
+                {isNotifOpen && (
+                    <div ref={notifRef} style={{ position: "fixed", top: notifPos.top, left: notifPos.left, zIndex: 60 }}>
+                        <div className="w-57 rounded-md bg-white shadow-lg border border-gray-100 p-3 text-sm">
+                            <div className="font-medium mb-2">Tienes {unreadCount} notificación{unreadCount !== 1 ? "es" : ""} sin leer</div>
+                            <div className="flex justify-center">
+                                <button
+                                    onClick={() => {
+                                        setIsNotifOpen(false);
+                                        navigate('/notificaciones');
+                                    }}
+                                    className="px-3 py-1 rounded-md bg-emerald-600 text-white text-sm hover:opacity-90"
+                                >
+                                    Ir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* User dropdown */}
                 <div className="relative" ref={dropdownRef}>

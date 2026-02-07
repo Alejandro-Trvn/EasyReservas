@@ -1,5 +1,6 @@
 import React from "react";
 import { Calendar } from "lucide-react";
+import SectionHeader from "../../components/SectionHeader";
 import TablaMinimalista from "../../components/Table/Table";
 import Buscador from "../../components/Table/Buscador";
 import Paginador from "../../components/Table/Paginador";
@@ -205,20 +206,10 @@ const Reservas = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-100 p-3 rounded-xl">
-            <Calendar size={28} className="text-blue-700" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Reservas</h1>
-            <p className="text-gray-600">Sistema de gestión de reservas</p>
-          </div>
-        </div>
+      <SectionHeader title="Reservas" subtitle="Sistema de gestión de reservas" Icon={Calendar}  bgColor="linear-gradient(to right, #134224, #22c55e)"/>
 
-        <div>
-          <Button onClick={() => { setEditingReserva(null); setOpenCrear(true); }} variant="primary">Crear reserva</Button>
-        </div>
+      <div className="flex justify-end">
+        <Button onClick={() => { setEditingReserva(null); setOpenCrear(true); }} variant="primary">Crear reserva</Button>
       </div>
 
       <CrearEditarReservas
@@ -240,7 +231,7 @@ const Reservas = () => {
       <Alert />
 
       <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-        <ScreenLoader loading={loading} message={"Cargando reservas..."} />
+        <ScreenLoader loading={loading} message={"Cargando reservas..."} color="#f2f7f6" height={10} width={4} />
 
         {error ? (
           <div className="text-red-600">

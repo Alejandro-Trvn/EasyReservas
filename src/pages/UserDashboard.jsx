@@ -1,64 +1,44 @@
-// src/features/dashboard/pages/DashboardPage.jsx
-import React, { useMemo, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Home, TrendingUp, Users, Activity } from "lucide-react";
+import { Home, Users, Activity } from "lucide-react";
+import SectionHeader from "../components/SectionHeader";
 import useEstadisticas from "../services/estadisticas/useEstadisticas";
-import useUsuarios from "../services/usuarios/useUsuarios";
-import useRecursos from "../services/recursos/useRecursos";
-import UserDashboard from "./UserDashboard";
 
-export default function DashboardPage() {
+export default function UserDashboard() {
   const { user } = useAuth();
-  const role = (user?.role || "").toString().toLowerCase();
-
-  // if not admin, render UserDashboard
-  if (role !== "admin") return <UserDashboard />;
-
-  const { estadisticas, loading: estadisticasLoading, fetchEstadisticas } = useEstadisticas();
-  const { usuarios = [], loading: usersLoading } = useUsuarios();
-  const { recursos = [], loading: recursosLoading } = useRecursos();
+  const {
+    historico,
+    historicoLoading,
+    fetchHistoricoReservasUsuario,
+  } = useEstadisticas();
 
   useEffect(() => {
-    // fetch global statistics for admin dashboard
-    fetchEstadisticas().catch(() => {});
-  }, [fetchEstadisticas]);
+    if (user?.id) fetchHistoricoReservasUsuario(user.id).catch(() => {});
+  }, [user?.id, fetchHistoricoReservasUsuario]);
 
-  const roleLabel = useMemo(() => {
-    const r = (user?.role || "").toString().toUpperCase();
-    return r || "—";
-  }, [user?.role]);
-
-  const totalReservas = estadisticas?.totales?.total_reservas ?? 0;
-  const totalUsuarios = (usuarios || []).length;
-  const totalRecursos = (recursos || []).length;
+  const totalReservas = historico?.total_reservas ?? 0;
+  const reservasActivas = historico?.reservas_activas ?? 0;
+  const recursosReservados = Array.isArray(historico?.reservas)
+    ? new Set(historico.reservas.map((r) => r.recurso)).size
+    : 0;
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl shadow-xl p-8 text-white">
-        <div className="flex items-center gap-4">
-          <div className="bg-white/20 p-4 rounded-xl backdrop-blur-sm">
-            <Home size={40} className="text-white" />
-          </div>
-
-          <div>
-            <h2 className="text-3xl font-bold">¡Bienvenido, {user?.name || "Usuario"}!</h2>
-            <p className="text-emerald-100 mt-2 text-lg">Para comenzar, selecciona una opción del menú lateral.</p>
-
-            <div className="mt-4 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
-              <span className="font-semibold">Rol:</span>
-              <span className="uppercase bg-white/30 px-3 py-1 rounded-full text-sm">{roleLabel}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SectionHeader
+        title="Mi Panel"
+        subtitle={`Resumen para ${user?.name || "Usuario"}`}
+        Icon={Home}
+        textColor="#ffffff"
+        bgColor="linear-gradient(90deg,#059669,#0ea5e9)"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium">Total de Reservas</p>
+              <p className="text-gray-500 text-sm font-medium">Mis Reservas</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                {estadisticasLoading ? (
+                {historicoLoading ? (
                   <svg className="animate-spin h-6 w-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
@@ -77,20 +57,20 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium">Total de Recursos</p>
+              <p className="text-gray-500 text-sm font-medium">Reservas Activas</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                {recursosLoading ? (
+                {historicoLoading ? (
                   <svg className="animate-spin h-6 w-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                   </svg>
                 ) : (
-                  totalRecursos
+                  reservasActivas
                 )}
               </p>
             </div>
             <div className="bg-amber-50 p-3 rounded-xl">
-              <TrendingUp size={28} className="text-amber-600" />
+              <Users size={28} className="text-amber-600" />
             </div>
           </div>
         </div>
@@ -98,50 +78,35 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium">Usuarios Activos</p>
+              <p className="text-gray-500 text-sm font-medium">Recursos Reservados</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                {usersLoading ? (
+                {historicoLoading ? (
                   <svg className="animate-spin h-6 w-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                   </svg>
                 ) : (
-                  totalUsuarios
+                  recursosReservados
                 )}
               </p>
             </div>
             <div className="bg-emerald-50 p-3 rounded-xl">
-              <Users size={28} className="text-emerald-600" />
+              <Home size={28} className="text-emerald-600" />
             </div>
           </div>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Información del Sistema</h3>
-
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">Información</h3>
         <div className="space-y-3">
           <div className="flex justify-between py-2 border-b border-gray-100">
             <span className="text-gray-600">Usuario:</span>
             <span className="font-semibold text-gray-900">{user?.name || "—"}</span>
           </div>
-
           <div className="flex justify-between py-2 border-b border-gray-100">
             <span className="text-gray-600">Email:</span>
             <span className="font-semibold text-gray-900">{user?.email || "—"}</span>
-          </div>
-
-          <div className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-gray-600">Rol:</span>
-            <span className="font-semibold text-gray-900 uppercase">{roleLabel}</span>
-          </div>
-
-          <div className="flex justify-between py-2">
-            <span className="text-gray-600">Estado:</span>
-            <span className="inline-flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-semibold text-emerald-600">Activo</span>
-            </span>
           </div>
         </div>
       </div>

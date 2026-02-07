@@ -15,9 +15,7 @@ import RecursosPage from "../pages/recursos/Recursos";
 import ReservasPage from "../pages/reservas/Reservas";
 import EstadisticasPage from "../pages/estadisticas/EstadisticasPage";
 import UsuariosRecursosPage from "../pages/estadisticas/UsuariosRecursosPage";
-
-// Usuarios page is imported above
-const NotificacionesPage = () => <div>Notificaciones (pendiente)</div>;
+import Notificaciones from "../pages/notificaciones/Notificaciones";
 
 export const routes = [
     // Públicas
@@ -41,7 +39,7 @@ export const routes = [
             { path: "recursos", element: <RecursosPage /> },
             { path: "tipo-recursos", element: <TipoRecursosPage /> },
             { path: "usuarios", element: <UsuariosPage /> },
-            { path: "notificaciones", element: <NotificacionesPage /> },
+            { path: "notificaciones", element: <Notificaciones /> },
             { path: "configuracion", element: <ConfiguracionPage /> },
         ],
     },

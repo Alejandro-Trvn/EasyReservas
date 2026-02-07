@@ -90,7 +90,7 @@ const MENU_MODULES = [
         label: "Usuarios y Recursos",
         path: "/estadisticas/usuarios-recursos",
         icon: Users,
-        rolesPermitidos: ["admin", "usuario"],
+        rolesPermitidos: ["admin"],
       },
     ],
   },
@@ -102,6 +102,12 @@ export const Sidebar = () => {
   const location = useLocation();
   const [expandedModules, setExpandedModules] = useState({});
   const { isCollapsed } = useSidebar();
+
+  // Popover state/hooks must be declared unconditionally to preserve hooks order
+  const [hoveredModule, setHoveredModule] = useState(null);
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+  const hideTimer = useRef(null);
+  const popoverRef = useRef(null);
 
   useEffect(() => {
     if (isCollapsed) setExpandedModules({});
@@ -138,10 +144,6 @@ export const Sidebar = () => {
   if (loading) return null;
   if (!user) return null;
 
-  const [hoveredModule, setHoveredModule] = useState(null);
-  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
-  const hideTimer = useRef(null);
-
   function clearHideTimer() {
     if (hideTimer.current) {
       clearTimeout(hideTimer.current);
@@ -160,6 +162,15 @@ export const Sidebar = () => {
   function hidePopover(delay = 400) {
     clearHideTimer();
     hideTimer.current = setTimeout(() => setHoveredModule(null), delay);
+  }
+
+  function handleTriggerMouseLeave(e) {
+    const related = e.relatedTarget;
+    if (popoverRef.current && related && popoverRef.current.contains(related)) {
+      // mouse moved into the popover — keep it open
+      return;
+    }
+    hidePopover();
   }
 
   return (
@@ -213,7 +224,7 @@ export const Sidebar = () => {
                 )}
                 title={isCollapsed ? module.label : undefined}
                 onMouseEnter={(e) => showPopoverForModule(module, e)}
-                onMouseLeave={hidePopover}
+                onMouseLeave={handleTriggerMouseLeave}
               >
                 <Icon
                   size={20}
@@ -253,7 +264,7 @@ export const Sidebar = () => {
                 )}
                 title={isCollapsed ? module.label : undefined}
                 onMouseEnter={(e) => showPopoverForModule(module, e)}
-                onMouseLeave={hidePopover}
+                onMouseLeave={handleTriggerMouseLeave}
               >
                 <div
                   className={clsx(
@@ -317,6 +328,7 @@ export const Sidebar = () => {
       {/* Popover shown when collapsed */}
       {isCollapsed && hoveredModule && (
         <div
+          ref={popoverRef}
           onMouseEnter={() => clearHideTimer()}
           onMouseLeave={() => hidePopover()}
           onFocus={() => clearHideTimer()}

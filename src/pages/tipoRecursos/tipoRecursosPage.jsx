@@ -5,6 +5,7 @@ import Buscador from "../../components/Table/Buscador";
 import ScreenLoader from "../../components/ScreenLoader";
 import Alert, { showAlert } from "../../components/Alert";
 import { Search } from "lucide-react";
+import SectionHeader from "../../components/SectionHeader";
 import { FiEdit, FiTrash2 } from "react-icons/fi";
 import Button from "../../components/Button";
 import CrearEditarRecurso from "./CrearEditarRecurso";
@@ -123,21 +124,17 @@ const TipoRecursosPage = () => {
 
 	return (
 		<div className="p-6">
-			<div className="flex items-center justify-between mb-4">
-				<div>
-					<h1 className="text-2xl font-semibold">Tipo de Recursos</h1>
-					<p className="text-sm text-emerald-600 mt-1">Listado de tipos de recursos</p>
-				</div>
-				<div>
-					<Button
-						onClick={() => {
-							setEditing(null);
-							setModalOpen(true);
-						}}
-					>
-						Nuevo tipo
-					</Button>
-				</div>
+			<SectionHeader title="Tipos de Recursos" subtitle="Listado de tipos de recursos" Icon={Search} />
+
+			<div className="flex justify-end">
+				<Button
+					onClick={() => {
+						setEditing(null);
+						setModalOpen(true);
+					}}
+				>
+					Nuevo tipo
+				</Button>
 			</div>
 
 			<Alert />
