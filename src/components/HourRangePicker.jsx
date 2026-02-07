@@ -3,20 +3,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 /**
  * HourRangePicker (React + Tailwind)
  * - Un SOLO componente: selecciona DESDE / HASTA
- * - UI estilo "mobile time picker": HH:MM + AM/PM + reloj circular
- * - Restringe el rango a [min,max] (ej: 12:00PM-4:00PM)
+ * - Restringe el rango a [min,max]
  * - Asegura desde <= hasta (si no, ajusta automáticamente)
- *
- * Props:
- *  - value: { from: string|null, to: string|null }  (ej {from:"12:30PM", to:"03:00PM"})
- *  - onChange: (next) => void
- *  - min: string (ej "12:00PM" o "12:00")
- *  - max: string (ej "16:00" o "04:00PM")
- *  - stepMinutes: number (default 5)
- *  - use12h: boolean (default true)
- *  - label: string (default "Select time")
- *  - placeholderFrom / placeholderTo
- *  - disabled: boolean
  */
 export default function HourRangePicker({
     value = { from: null, to: null },
@@ -41,8 +29,8 @@ export default function HourRangePicker({
     const [ampm, setAmpm] = useState("AM");
 
     // Estado interno rango
-    const [fromM, setFromM] = useState(null); // minutes
-    const [toM, setToM] = useState(null); // minutes
+    const [fromM, setFromM] = useState(null);
+    const [toM, setToM] = useState(null);
 
     // ---------- Helpers de tiempo ----------
     const pad2 = (n) => String(n).padStart(2, "0");
@@ -81,14 +69,14 @@ export default function HourRangePicker({
         return `${pad2(h12)}:${pad2(m)}${ap}`;
     }
 
-    function stateToMinutes() {
-        if (!use12h) return (Number(hh) % 24) * 60 + (Number(mm) % 60);
+    function stateToMinutesWithOverride({ hh: hhX, mm: mmX, ampm: apX }) {
+        if (!use12h) return (Number(hhX) % 24) * 60 + (Number(mmX) % 60);
 
-        let h12 = Number(hh);
+        let h12 = Number(hhX);
         if (h12 === 12) h12 = 0;
         let h24 = h12;
-        if (ampm === "PM") h24 += 12;
-        return (h24 % 24) * 60 + (Number(mm) % 60);
+        if (apX === "PM") h24 += 12;
+        return (h24 % 24) * 60 + (Number(mmX) % 60);
     }
 
     function minutesToState(totalMinutes) {
@@ -109,7 +97,6 @@ export default function HourRangePicker({
 
     const minM = useMemo(() => parseToMinutes(min) ?? 0, [min]);
     const maxM = useMemo(() => parseToMinutes(max) ?? 23 * 60 + 59, [max]);
-
     const step = useMemo(() => Math.max(1, Number(stepMinutes) || 5), [stepMinutes]);
 
     function snapMinutes(m) {
@@ -133,18 +120,15 @@ export default function HourRangePicker({
         const vFrom = value?.from ? parseToMinutes(value.from) : null;
         const vTo = value?.to ? parseToMinutes(value.to) : null;
 
-        // si no vienen, ponemos defaults dentro del rango
         const initFrom = snapMinutes(vFrom ?? minM);
-        const initTo = snapMinutes(vTo ?? Math.min(minM + 60, maxM)); // +1h por defecto
+        const initTo = snapMinutes(vTo ?? Math.min(minM + 60, maxM));
 
-        // asegurar orden
         const fixedFrom = initFrom;
         const fixedTo = Math.max(initTo, fixedFrom);
 
         setFromM(fixedFrom);
         setToM(fixedTo);
 
-        // cargar estado del lado activo
         const base = activeSide === "from" ? fixedFrom : fixedTo;
         const st = minutesToState(base);
         setHh(st.hh);
@@ -199,11 +183,15 @@ export default function HourRangePicker({
             return;
         }
 
-        // activeSide === "to"
         const newTo = clamped;
         const newFrom = fromM == null ? newTo : Math.min(fromM, newTo);
         setFromM(newFrom);
         setToM(newTo);
+    }
+
+    function minutesToHours24(totalMinutes) {
+        if (totalMinutes == null) return null;
+        return Math.floor(totalMinutes / 60) % 24;
     }
 
     const handleSelectHourFromDial = (hDial) => {
@@ -216,7 +204,6 @@ export default function HourRangePicker({
             return;
         }
 
-        // 24h: bloque según hora actual del lado activo
         const current = minutesToHours24(activeSide === "from" ? fromM : toM);
         const isPMBlock = (current ?? 0) >= 12;
         const base = isPMBlock ? 12 : 0;
@@ -240,21 +227,6 @@ export default function HourRangePicker({
         setSideMinutes(next);
     };
 
-    function minutesToHours24(totalMinutes) {
-        if (totalMinutes == null) return null;
-        return Math.floor(totalMinutes / 60) % 24;
-    }
-
-    function stateToMinutesWithOverride({ hh: hhX, mm: mmX, ampm: apX }) {
-        if (!use12h) return (Number(hhX) % 24) * 60 + (Number(mmX) % 60);
-
-        let h12 = Number(hhX);
-        if (h12 === 12) h12 = 0;
-        let h24 = h12;
-        if (apX === "PM") h24 += 12;
-        return (h24 % 24) * 60 + (Number(mmX) % 60);
-    }
-
     const apply = () => {
         const finalFrom = snapMinutes(fromM ?? minM);
         const finalTo = snapMinutes(toM ?? Math.max(finalFrom, Math.min(finalFrom + 60, maxM)));
@@ -262,12 +234,11 @@ export default function HourRangePicker({
         const fixedFrom = finalFrom;
         const fixedTo = Math.max(finalTo, fixedFrom);
 
-        const next = {
+        onChange?.({
             from: minutesToDisplay(fixedFrom),
             to: minutesToDisplay(fixedTo),
-        };
+        });
 
-        onChange?.(next);
         setOpen(false);
     };
 
@@ -278,14 +249,14 @@ export default function HourRangePicker({
     const displayFrom = value?.from ? minutesToDisplay(parseToMinutes(value.from)) : "";
     const displayTo = value?.to ? minutesToDisplay(parseToMinutes(value.to)) : "";
 
-    // ---------- Dial UI ----------
+    // ---------- Dial UI (responsive para móvil) ----------
     const dial = (
-        <div className="relative mx-auto mt-3 h-44 w-44 rounded-full bg-gray-50">
+        <div className="relative mx-auto mt-3 h-40 w-40 sm:h-44 sm:w-44 rounded-full bg-gray-50">
             {dialHours.map((n, idx) => {
                 const angle = (idx / 12) * (2 * Math.PI) - Math.PI / 2;
-                const r = 70;
-                const x = 88 + r * Math.cos(angle);
-                const y = 88 + r * Math.sin(angle);
+                const r = 62; // un poco menor para móvil
+                const x = 80 + r * Math.cos(angle);
+                const y = 80 + r * Math.sin(angle);
 
                 const baseMin = activeSide === "from" ? fromM : toM;
                 const st = baseMin == null ? null : minutesToState(baseMin);
@@ -319,7 +290,7 @@ export default function HourRangePicker({
                     const angle = (hourIndex / 12) * 360;
                     return (
                         <div
-                            className="absolute left-1/2 top-1/2 h-16 w-[2px] -translate-x-1/2 -translate-y-full bg-violet-600"
+                            className="absolute left-1/2 top-1/2 h-14 w-[2px] -translate-x-1/2 -translate-y-full bg-violet-600"
                             style={{
                                 transform: `translate(-50%, -100%) rotate(${angle}deg)`,
                                 transformOrigin: "bottom",
@@ -360,165 +331,163 @@ export default function HourRangePicker({
 
                     <span className="text-[11px] text-gray-500">Rango permitido: {rangeLabel}</span>
                 </div>
+
                 <span className="mt-1 text-gray-400">▾</span>
             </button>
 
-            {/* Modal */}
+            {/* Modal (FIX: max-height + scroll interno) */}
             {open && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 p-4">
-                    <div ref={dialogRef} className="w-[340px] max-w-full rounded-2xl bg-white p-4 shadow-xl">
-                        <div className="text-sm font-semibold text-gray-700">{label}</div>
+                <div className="fixed inset-0 z-[9999] bg-black/30 p-3 sm:p-4 flex items-center justify-center">
+                    <div
+                        ref={dialogRef}
+                        className="w-full max-w-[380px] rounded-2xl bg-white shadow-xl border border-gray-100
+                       max-h-[calc(100dvh-2rem)] overflow-y-auto"
+                    >
+                        <div className="p-4">
+                            <div className="text-sm font-semibold text-gray-700">{label}</div>
 
-                        {/* Toggle Desde / Hasta */}
-                        <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1">
-                            <button
-                                type="button"
-                                onClick={() => setActiveSide("from")}
-                                className={[
-                                    "rounded-lg px-3 py-2 text-xs font-extrabold transition",
-                                    activeSide === "from" ? "bg-white text-violet-700 shadow" : "text-gray-600",
-                                ].join(" ")}
-                            >
-                                DESDE
-                                <div className="mt-0.5 text-[11px] font-bold text-gray-500">
-                                    {minutesToDisplay(fromM)}
-                                </div>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setActiveSide("to")}
-                                className={[
-                                    "rounded-lg px-3 py-2 text-xs font-extrabold transition",
-                                    activeSide === "to" ? "bg-white text-violet-700 shadow" : "text-gray-600",
-                                ].join(" ")}
-                            >
-                                HASTA
-                                <div className="mt-0.5 text-[11px] font-bold text-gray-500">
-                                    {minutesToDisplay(toM)}
-                                </div>
-                            </button>
-                        </div>
-
-                        {/* Header HH:MM + AM/PM */}
-                        <div className="mt-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                            {/* Toggle Desde / Hasta */}
+                            <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1">
                                 <button
                                     type="button"
-                                    onClick={() => setActiveField("hh")}
+                                    onClick={() => setActiveSide("from")}
                                     className={[
-                                        "w-16 rounded-xl px-3 py-2 text-center text-2xl font-extrabold",
-                                        activeField === "hh" ? "bg-violet-200 text-violet-900" : "bg-gray-100 text-gray-700",
+                                        "rounded-lg px-3 py-2 text-xs font-extrabold transition",
+                                        activeSide === "from" ? "bg-white text-violet-700 shadow" : "text-gray-600",
                                     ].join(" ")}
                                 >
-                                    {pad2(hh)}
+                                    DESDE
+                                    <div className="mt-0.5 text-[11px] font-bold text-gray-500">{minutesToDisplay(fromM)}</div>
                                 </button>
-
-                                <span className="text-2xl font-extrabold text-gray-400">:</span>
 
                                 <button
                                     type="button"
-                                    onClick={() => setActiveField("mm")}
+                                    onClick={() => setActiveSide("to")}
                                     className={[
-                                        "w-16 rounded-xl px-3 py-2 text-center text-2xl font-extrabold",
-                                        activeField === "mm" ? "bg-violet-200 text-violet-900" : "bg-gray-100 text-gray-700",
+                                        "rounded-lg px-3 py-2 text-xs font-extrabold transition",
+                                        activeSide === "to" ? "bg-white text-violet-700 shadow" : "text-gray-600",
                                     ].join(" ")}
                                 >
-                                    {pad2(mm)}
+                                    HASTA
+                                    <div className="mt-0.5 text-[11px] font-bold text-gray-500">{minutesToDisplay(toM)}</div>
                                 </button>
                             </div>
 
-                            {use12h ? (
-                                <div className="flex flex-col overflow-hidden rounded-xl border">
+                            {/* Header HH:MM + AM/PM */}
+                            <div className="mt-3 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
                                     <button
                                         type="button"
-                                        onClick={() => handleSetAmpm("AM")}
+                                        onClick={() => setActiveField("hh")}
                                         className={[
-                                            "px-4 py-2 text-xs font-bold",
-                                            ampm === "AM" ? "bg-violet-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50",
+                                            "w-16 rounded-xl px-3 py-2 text-center text-2xl font-extrabold",
+                                            activeField === "hh" ? "bg-violet-200 text-violet-900" : "bg-gray-100 text-gray-700",
                                         ].join(" ")}
                                     >
-                                        AM
+                                        {pad2(hh)}
                                     </button>
+
+                                    <span className="text-2xl font-extrabold text-gray-400">:</span>
+
                                     <button
                                         type="button"
-                                        onClick={() => handleSetAmpm("PM")}
+                                        onClick={() => setActiveField("mm")}
                                         className={[
-                                            "px-4 py-2 text-xs font-bold",
-                                            ampm === "PM" ? "bg-violet-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50",
+                                            "w-16 rounded-xl px-3 py-2 text-center text-2xl font-extrabold",
+                                            activeField === "mm" ? "bg-violet-200 text-violet-900" : "bg-gray-100 text-gray-700",
                                         ].join(" ")}
                                     >
-                                        PM
+                                        {pad2(mm)}
                                     </button>
                                 </div>
-                            ) : (
-                                <div className="text-xs font-semibold text-gray-500 text-right">
-                                    24h
-                                </div>
-                            )}
-                        </div>
 
-                        {/* Dial */}
-                        {dial}
-
-                        {/* Minutos */}
-                        <div className="mt-3">
-                            <div className="flex items-center justify-between">
-                                <div className="text-xs font-semibold text-gray-600">
-                                    {activeField === "mm" ? "Minutos" : "Toque un número para elegir hora"}
-                                </div>
-                                <div className="text-[11px] text-gray-500">
-                                    Selección actual:{" "}
-                                    <span className="font-extrabold">
-                                        {minutesToDisplay(activeSide === "from" ? fromM : toM)}
-                                    </span>
-                                </div>
+                                {use12h ? (
+                                    <div className="flex flex-col overflow-hidden rounded-xl border">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSetAmpm("AM")}
+                                            className={[
+                                                "px-4 py-2 text-xs font-bold",
+                                                ampm === "AM" ? "bg-violet-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50",
+                                            ].join(" ")}
+                                        >
+                                            AM
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSetAmpm("PM")}
+                                            className={[
+                                                "px-4 py-2 text-xs font-bold",
+                                                ampm === "PM" ? "bg-violet-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50",
+                                            ].join(" ")}
+                                        >
+                                            PM
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-xs font-semibold text-gray-500 text-right">24h</div>
+                                )}
                             </div>
 
-                            {activeField === "mm" && (
-                                <div className="mt-2 grid grid-cols-6 gap-2">
-                                    {minuteOptions.map((m) => {
-                                        const selected = Number(mm) === m;
-                                        return (
-                                            <button
-                                                key={m}
-                                                type="button"
-                                                onClick={() => handleSelectMinute(m)}
-                                                className={[
-                                                    "rounded-lg px-2 py-2 text-xs font-bold",
-                                                    selected ? "bg-violet-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200",
-                                                ].join(" ")}
-                                            >
-                                                {pad2(m)}
-                                            </button>
-                                        );
-                                    })}
+                            {/* Dial */}
+                            {dial}
+
+                            {/* Minutos */}
+                            <div className="mt-3">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="text-xs font-semibold text-gray-600">
+                                        {activeField === "mm" ? "Minutos" : "Toque un número para elegir hora"}
+                                    </div>
+                                    <div className="text-[11px] text-gray-500 text-right">
+                                        Selección actual:{" "}
+                                        <span className="font-extrabold">
+                                            {minutesToDisplay(activeSide === "from" ? fromM : toM)}
+                                        </span>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
 
-                        {/* Hint de orden */}
-                        {fromM != null && toM != null && toM < fromM && (
-                            <div className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-700">
-                                El rango no es válido (Hasta &lt; Desde). Se ajustará automáticamente.
+                                {activeField === "mm" && (
+                                    <div className="mt-2 grid grid-cols-5 sm:grid-cols-6 gap-2">
+                                        {minuteOptions.map((m) => {
+                                            const selected = Number(mm) === m;
+                                            return (
+                                                <button
+                                                    key={m}
+                                                    type="button"
+                                                    onClick={() => handleSelectMinute(m)}
+                                                    className={[
+                                                        "rounded-lg px-2 py-2 text-xs font-bold",
+                                                        selected ? "bg-violet-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200",
+                                                    ].join(" ")}
+                                                >
+                                                    {pad2(m)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
-                        )}
 
-                        {/* Footer */}
-                        <div className="mt-4 flex items-center justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={cancel}
-                                className="rounded-xl px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={apply}
-                                className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-violet-700"
-                            >
-                                OK
-                            </button>
+                            {/* Footer */}
+                            <div className="mt-4 flex items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={cancel}
+                                    className="rounded-xl px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={apply}
+                                    className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-violet-700"
+                                >
+                                    OK
+                                </button>
+                            </div>
+
+                            {/* padding final para que el último botón no quede pegado si hay scroll */}
+                            <div className="h-1" />
                         </div>
                     </div>
                 </div>

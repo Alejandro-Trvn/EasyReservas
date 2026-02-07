@@ -38,8 +38,9 @@ export default function LoginPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    if (submitting) return;
 
+    setError("");
     const msg = validate();
     if (msg) return setError(msg);
 
@@ -62,18 +63,18 @@ export default function LoginPage() {
         return;
       }
 
-      // 3) Actualizar token en contexto
-      const token = result?.data?.access_token || localStorage.getItem("access_token");
+      // 3) Token
+      const token =
+        result?.data?.access_token || localStorage.getItem("access_token");
       if (token) setToken(token);
 
-      // 4) Ya hay token guardado; cargamos /me para user + role y actualizar contexto
+      // 4) Cargar /me para user + role + permisos (context)
       await refreshMe();
 
-      // 4) Redirigir (si venía de una ruta protegida, úsala)
+      // 5) Redirigir
       const from = location?.state?.from || "/dashboard";
       navigate(from, { replace: true });
     } catch (err) {
-      // Esto solo debería ocurrir si hay un error no controlado (network, etc.)
       const apiMsg =
         err?.response?.data?.message ||
         err?.message ||
@@ -90,24 +91,25 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full bg-white/50 blur-2xl" />
       <div className="pointer-events-none absolute -bottom-28 -right-28 h-96 w-96 rounded-full bg-slate-400/20 blur-2xl" />
 
-      <div className="relative min-h-screen flex items-center justify-center px-4 py-10">
+      <div className="relative min-h-screen flex items-center justify-center px-4 py-8 sm:py-10 safe-top safe-bottom">
         <div className="w-full max-w-md">
           {/* Card amber glass */}
           <div className="rounded-3xl overflow-hidden border border-amber-500/25 bg-amber-200/20 shadow-[0_12px_40px_rgba(15,23,42,0.18)] backdrop-blur-2xl relative">
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-600/35 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-br from-white/35 via-transparent to-transparent pointer-events-none" />
 
-            <div className="p-6 lg:p-8">
+            <div className="p-5 sm:p-6 lg:p-8">
               <button
                 type="button"
                 onClick={() => navigate("/")}
-                className="text-xs text-slate-700 hover:text-slate-900 underline underline-offset-4"
+                className="inline-flex items-center gap-2 rounded-xl px-2 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-white/35 active:bg-white/45 transition
+                           focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-500/25"
               >
-                ← Volver
+                <span aria-hidden="true">←</span> Volver
               </button>
 
               {/* Título centrado */}
-              <div className="mt-4 text-center text-3xl font-extrabold tracking-tight text-slate-900">
+              <div className="mt-4 text-center text-3xl sm:text-[2.1rem] font-extrabold tracking-tight text-slate-900">
                 Log In
               </div>
               <div className="mt-2 text-center text-sm text-slate-700">
@@ -134,6 +136,7 @@ export default function LoginPage() {
                     onChange={onChange}
                     placeholder="admin@uni.com"
                     autoComplete="username"
+                    inputMode="email"
                     className="w-full rounded-xl bg-white/60 border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 outline-none
                                focus:border-amber-600/60 focus:ring-4 focus:ring-amber-500/20 transition-all"
                     required
@@ -162,8 +165,11 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-600 hover:bg-white/40 hover:text-slate-900 transition-colors"
-                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-600 hover:bg-white/40 hover:text-slate-900 active:bg-white/50 transition-colors
+                                 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-500/25"
+                      aria-label={
+                        showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                      }
                     >
                       <PasswordToggleIcon show={showPassword} />
                     </button>
@@ -174,10 +180,11 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="relative w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 text-sm
+                  className="relative w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold py-3.5 text-sm
                              shadow-[0_12px_30px_rgba(16,185,129,0.28)]
                              disabled:opacity-60 disabled:cursor-not-allowed
-                             transition-all duration-300 overflow-hidden group"
+                             transition-all duration-300 overflow-hidden group
+                             focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/25"
                 >
                   <span className="relative z-10">
                     {submitting ? "Logging in..." : "Login"}

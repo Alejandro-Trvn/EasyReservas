@@ -22,7 +22,6 @@ export default function DateRangePicker({
     const [viewYear, setViewYear] = useState(() => (value?.from ?? new Date()).getFullYear());
     const [viewMonth, setViewMonth] = useState(() => (value?.from ?? new Date()).getMonth());
 
-    // Range de años (decada)
     const decadeStart = useMemo(() => Math.floor(viewYear / 10) * 10, [viewYear]);
 
     const ref = useRef(null);
@@ -93,6 +92,7 @@ export default function DateRangePicker({
         const onKey = (e) => {
             if (e.key === "Escape") setOpen(false);
         };
+
         const onClick = (e) => {
             if (!ref.current) return;
             if (!ref.current.contains(e.target)) setOpen(false);
@@ -153,7 +153,7 @@ export default function DateRangePicker({
     }, [viewYear, viewMonth]);
 
     const daysGrid = useMemo(() => {
-        // Semana inicia lunes (como tu UI anterior)
+        // Semana inicia lunes
         const first = new Date(viewYear, viewMonth, 1);
         const last = new Date(viewYear, viewMonth + 1, 0);
 
@@ -192,7 +192,7 @@ export default function DateRangePicker({
         setViewMonth(d.getMonth());
     };
 
-    // ---------- Month / Year picker (como imágenes) ----------
+    // ---------- Month / Year picker ----------
     const months = useMemo(
         () => [
             { key: 0, label: "ene" },
@@ -212,7 +212,6 @@ export default function DateRangePicker({
     );
 
     const yearsGrid = useMemo(() => {
-        // 16 celdas: (decade-2 .. decade+13) para "fade" arriba/abajo
         const start = decadeStart - 2;
         return Array.from({ length: 16 }, (_, i) => start + i);
     }, [decadeStart]);
@@ -274,7 +273,6 @@ export default function DateRangePicker({
                     </span>
                 </div>
 
-                {/* Icono (lucide-react) */}
                 <div className="h-9 w-9 rounded-lg border bg-white grid place-items-center text-gray-600">
                     <CalendarDays size={18} />
                 </div>
@@ -282,226 +280,232 @@ export default function DateRangePicker({
 
             {/* Popover */}
             {open && (
-                <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/30 p-4 pt-20">
-                    <div ref={ref} className="w-[380px] max-w-full rounded-2xl bg-white p-4 shadow-xl">
-                        {/* Header tipo input + icon click (abre month/year picker) */}
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex-1 rounded-lg border px-3 py-2 text-sm font-semibold text-gray-800">
-                                {draftFrom ? fmt(draftFrom) : "…"}{" "}
-                                <span className="text-gray-400">-</span>{" "}
-                                {draftTo ? fmt(draftTo) : "…"}
+                <div className="fixed inset-0 z-[9999] bg-black/30 p-3 sm:p-4 flex items-center justify-center">
+                    {/* Panel: max-height + scroll interno para que NO se desborde en móvil */}
+                    <div
+                        ref={ref}
+                        className="w-full max-w-[420px] rounded-2xl bg-white shadow-xl border border-gray-100
+                       max-h-[calc(100dvh-2rem)] overflow-y-auto"
+                    >
+                        <div className="p-4">
+                            {/* Header tipo input + icon click */}
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex-1 rounded-lg border px-3 py-2 text-sm font-semibold text-gray-800">
+                                    {draftFrom ? fmt(draftFrom) : "…"} <span className="text-gray-400">-</span>{" "}
+                                    {draftTo ? fmt(draftTo) : "…"}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={toggleMonthYearPicker}
+                                    className={[
+                                        "h-9 w-9 rounded-lg grid place-items-center",
+                                        viewMode === "day" ? "bg-violet-100 text-violet-700" : "bg-blue-600 text-white",
+                                    ].join(" ")}
+                                    title="Cambiar vista (mes/año)"
+                                >
+                                    <CalendarDays size={18} />
+                                </button>
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={toggleMonthYearPicker}
-                                className={[
-                                    "h-9 w-9 rounded-lg grid place-items-center",
-                                    viewMode === "day" ? "bg-violet-100 text-violet-700" : "bg-blue-600 text-white",
-                                ].join(" ")}
-                                title="Cambiar vista (mes/año)"
-                            >
-                                <CalendarDays size={18} />
-                            </button>
-                        </div>
+                            {/* ======= VISTA: MONTH PICKER ======= */}
+                            {viewMode === "month" && (
+                                <div className="mt-4 rounded-2xl bg-neutral-900 text-white p-4 shadow-inner">
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-sm font-semibold opacity-90">{viewYear}</div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={goYearUp}
+                                                className="h-9 w-9 rounded-lg grid place-items-center hover:bg-white/10"
+                                                title="Año anterior"
+                                            >
+                                                <ChevronUp size={18} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={goYearDown}
+                                                className="h-9 w-9 rounded-lg grid place-items-center hover:bg-white/10"
+                                                title="Año siguiente"
+                                            >
+                                                <ChevronDown size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
 
-                        {/* ======= VISTA: MONTH PICKER ======= */}
-                        {viewMode === "month" && (
-                            <div className="mt-4 rounded-2xl bg-neutral-900 text-white p-4 shadow-inner">
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm font-semibold opacity-90">{viewYear}</div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={goYearUp}
-                                            className="h-9 w-9 rounded-lg grid place-items-center hover:bg-white/10"
-                                            title="Año anterior"
-                                        >
-                                            <ChevronUp size={18} />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={goYearDown}
-                                            className="h-9 w-9 rounded-lg grid place-items-center hover:bg-white/10"
-                                            title="Año siguiente"
-                                        >
-                                            <ChevronDown size={18} />
-                                        </button>
+                                    <div className="mt-4 grid grid-cols-4 gap-3">
+                                        {months.map((m) => {
+                                            const selected = m.key === viewMonth;
+                                            return (
+                                                <button
+                                                    key={m.key}
+                                                    type="button"
+                                                    onClick={() => pickMonth(m.key)}
+                                                    className={[
+                                                        "h-14 rounded-xl text-sm font-semibold uppercase tracking-wide",
+                                                        selected ? "bg-blue-600 text-white" : "bg-transparent hover:bg-white/10",
+                                                    ].join(" ")}
+                                                >
+                                                    {m.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="mt-4 text-[11px] opacity-70">
+                                        Tip: vuelve a dar clic al icono para elegir <b>año</b>.
                                     </div>
                                 </div>
+                            )}
 
-                                <div className="mt-4 grid grid-cols-4 gap-3">
-                                    {months.map((m) => {
-                                        const selected = m.key === viewMonth;
-                                        return (
+                            {/* ======= VISTA: YEAR PICKER ======= */}
+                            {viewMode === "year" && (
+                                <div className="mt-4 rounded-2xl bg-neutral-900 text-white p-4 shadow-inner">
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-sm font-semibold opacity-90">{yearRangeLabel}</div>
+                                        <div className="flex items-center gap-2">
                                             <button
-                                                key={m.key}
                                                 type="button"
-                                                onClick={() => pickMonth(m.key)}
-                                                className={[
-                                                    "h-14 rounded-xl text-sm font-semibold uppercase tracking-wide",
-                                                    selected ? "bg-blue-600 text-white" : "bg-transparent hover:bg-white/10",
-                                                ].join(" ")}
+                                                onClick={goDecadeUp}
+                                                className="h-9 w-9 rounded-lg grid place-items-center hover:bg-white/10"
+                                                title="Década anterior"
                                             >
-                                                {m.label}
+                                                <ChevronUp size={18} />
                                             </button>
-                                        );
-                                    })}
-                                </div>
+                                            <button
+                                                type="button"
+                                                onClick={goDecadeDown}
+                                                className="h-9 w-9 rounded-lg grid place-items-center hover:bg-white/10"
+                                                title="Década siguiente"
+                                            >
+                                                <ChevronDown size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                <div className="mt-4 text-[11px] opacity-70">
-                                    Tip: vuelve a dar clic al icono para elegir <b>año</b>.
-                                </div>
-                            </div>
-                        )}
+                                    <div className="mt-4 grid grid-cols-4 gap-3">
+                                        {yearsGrid.map((y, idx) => {
+                                            const isInDecade = y >= decadeStart && y <= decadeStart + 9;
+                                            const selected = y === viewYear;
 
-                        {/* ======= VISTA: YEAR PICKER ======= */}
-                        {viewMode === "year" && (
-                            <div className="mt-4 rounded-2xl bg-neutral-900 text-white p-4 shadow-inner">
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm font-semibold opacity-90">{yearRangeLabel}</div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={goDecadeUp}
-                                            className="h-9 w-9 rounded-lg grid place-items-center hover:bg-white/10"
-                                            title="Década anterior"
-                                        >
-                                            <ChevronUp size={18} />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={goDecadeDown}
-                                            className="h-9 w-9 rounded-lg grid place-items-center hover:bg-white/10"
-                                            title="Década siguiente"
-                                        >
-                                            <ChevronDown size={18} />
-                                        </button>
+                                            return (
+                                                <button
+                                                    key={`${y}-${idx}`}
+                                                    type="button"
+                                                    onClick={() => pickYear(y)}
+                                                    className={[
+                                                        "h-14 rounded-xl text-sm font-semibold",
+                                                        selected ? "bg-blue-600 text-white" : "hover:bg-white/10",
+                                                        !isInDecade ? "opacity-35" : "opacity-100",
+                                                    ].join(" ")}
+                                                >
+                                                    {y}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="mt-4 text-[11px] opacity-70">
+                                        Tip: al elegir un año, pasas a elegir <b>mes</b>.
                                     </div>
                                 </div>
+                            )}
 
-                                <div className="mt-4 grid grid-cols-4 gap-3">
-                                    {yearsGrid.map((y, idx) => {
-                                        const isInDecade = y >= decadeStart && y <= decadeStart + 9;
-                                        const selected = y === viewYear;
+                            {/* ======= VISTA: DAY PICKER ======= */}
+                            {viewMode === "day" && (
+                                <>
+                                    {/* Month nav */}
+                                    <div className="mt-3 flex items-center justify-between">
+                                        <button
+                                            type="button"
+                                            onClick={prevMonth}
+                                            className="rounded-lg px-2 py-2 text-sm font-bold text-violet-700 hover:bg-violet-50"
+                                        >
+                                            ‹
+                                        </button>
 
-                                        return (
-                                            <button
-                                                key={`${y}-${idx}`}
-                                                type="button"
-                                                onClick={() => pickYear(y)}
-                                                className={[
-                                                    "h-14 rounded-xl text-sm font-semibold",
-                                                    selected ? "bg-blue-600 text-white" : "hover:bg-white/10",
-                                                    !isInDecade ? "opacity-35" : "opacity-100",
-                                                ].join(" ")}
-                                            >
-                                                {y}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setViewMode("month")}
+                                            className="text-sm font-extrabold text-violet-700 hover:underline"
+                                            title="Cambiar a selector de mes"
+                                        >
+                                            {monthLabel}
+                                        </button>
 
-                                <div className="mt-4 text-[11px] opacity-70">
-                                    Tip: al elegir un año, pasas a elegir <b>mes</b>.
-                                </div>
+                                        <button
+                                            type="button"
+                                            onClick={nextMonth}
+                                            className="rounded-lg px-2 py-2 text-sm font-bold text-violet-700 hover:bg-violet-50"
+                                        >
+                                            ›
+                                        </button>
+                                    </div>
+
+                                    {/* Weekdays */}
+                                    <div className="mt-2 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-gray-500">
+                                        <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+                                    </div>
+
+                                    {/* Days */}
+                                    <div className="mt-2 grid grid-cols-7 gap-1">
+                                        {daysGrid.map((cell, idx) => {
+                                            const d = cell.date;
+                                            const inMonth = cell.inMonth;
+                                            const disabledDay = isDisabled(d);
+                                            const inRange = isInRange(d);
+                                            const start = isRangeStart(d);
+                                            const end = isRangeEnd(d);
+
+                                            const cls = [
+                                                "h-10 w-10 rounded-xl text-sm font-bold transition relative",
+                                                !inMonth ? "text-gray-300" : "text-gray-700",
+                                                disabledDay ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-100",
+                                                inRange ? "bg-blue-50" : "",
+                                                start || end ? "bg-white ring-2 ring-blue-600" : "",
+                                                start ? "shadow-[0_0_0_2px_rgba(168,85,247,0.85)]" : "",
+                                            ]
+                                                .filter(Boolean)
+                                                .join(" ");
+
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => pickDay(d)}
+                                                    disabled={disabledDay}
+                                                    className={cls}
+                                                    title={fmt(d)}
+                                                >
+                                                    {d.getDate()}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="mt-2 text-[11px] text-gray-500">
+                                        1er clic = desde, 2do clic = hasta. Un 3er clic reinicia.
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Footer */}
+                            <div className="mt-4 flex items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={cancel}
+                                    className="rounded-xl px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={apply}
+                                    className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-violet-700"
+                                >
+                                    OK
+                                </button>
                             </div>
-                        )}
-
-                        {/* ======= VISTA: DAY PICKER ======= */}
-                        {viewMode === "day" && (
-                            <>
-                                {/* Month nav */}
-                                <div className="mt-3 flex items-center justify-between">
-                                    <button
-                                        type="button"
-                                        onClick={prevMonth}
-                                        className="rounded-lg px-2 py-2 text-sm font-bold text-violet-700 hover:bg-violet-50"
-                                    >
-                                        ‹
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setViewMode("month")}
-                                        className="text-sm font-extrabold text-violet-700 hover:underline"
-                                        title="Cambiar a selector de mes"
-                                    >
-                                        {monthLabel}
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={nextMonth}
-                                        className="rounded-lg px-2 py-2 text-sm font-bold text-violet-700 hover:bg-violet-50"
-                                    >
-                                        ›
-                                    </button>
-                                </div>
-
-                                {/* Weekdays */}
-                                <div className="mt-2 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-gray-500">
-                                    <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
-                                </div>
-
-                                {/* Days */}
-                                <div className="mt-2 grid grid-cols-7 gap-1">
-                                    {daysGrid.map((cell, idx) => {
-                                        const d = cell.date;
-                                        const inMonth = cell.inMonth;
-                                        const disabledDay = isDisabled(d);
-                                        const inRange = isInRange(d);
-                                        const start = isRangeStart(d);
-                                        const end = isRangeEnd(d);
-
-                                        const cls = [
-                                            "h-10 w-10 rounded-xl text-sm font-bold transition relative",
-                                            !inMonth ? "text-gray-300" : "text-gray-700",
-                                            disabledDay ? "opacity-40 cursor-not-allowed" : "hover:bg-gray-100",
-                                            inRange ? "bg-blue-50" : "",
-                                            start || end ? "bg-white ring-2 ring-blue-600" : "",
-                                            start ? "shadow-[0_0_0_2px_rgba(168,85,247,0.85)]" : "",
-                                        ]
-                                            .filter(Boolean)
-                                            .join(" ");
-
-                                        return (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() => pickDay(d)}
-                                                disabled={disabledDay}
-                                                className={cls}
-                                                title={fmt(d)}
-                                            >
-                                                {d.getDate()}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                <div className="mt-2 text-[11px] text-gray-500">
-                                    1er clic = desde, 2do clic = hasta. Un 3er clic reinicia.
-                                </div>
-                            </>
-                        )}
-
-                        {/* Footer */}
-                        <div className="mt-4 flex items-center justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={cancel}
-                                className="rounded-xl px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={apply}
-                                className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-violet-700"
-                            >
-                                OK
-                            </button>
                         </div>
                     </div>
                 </div>

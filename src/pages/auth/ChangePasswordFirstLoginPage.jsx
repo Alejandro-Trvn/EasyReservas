@@ -66,6 +66,8 @@ export default function ChangePasswordFirstLoginPage() {
 
     const onSubmit = async (e) => {
         e.preventDefault();
+        if (submitting) return;
+
         setError("");
 
         const msg = validate();
@@ -100,20 +102,21 @@ export default function ChangePasswordFirstLoginPage() {
             <div className="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full bg-white/50 blur-2xl" />
             <div className="pointer-events-none absolute -bottom-28 -right-28 h-96 w-96 rounded-full bg-slate-400/20 blur-2xl" />
 
-            <div className="relative min-h-screen flex items-center justify-center px-4 py-10">
+            <div className="relative min-h-screen flex items-center justify-center px-4 py-8 sm:py-10 safe-top safe-bottom">
                 <div className="w-full max-w-md">
                     {/* Card amber glass */}
                     <div className="rounded-3xl overflow-hidden border border-amber-500/25 bg-amber-200/20 shadow-[0_12px_40px_rgba(15,23,42,0.18)] backdrop-blur-2xl relative">
                         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-600/35 to-transparent" />
                         <div className="absolute inset-0 bg-gradient-to-br from-white/35 via-transparent to-transparent pointer-events-none" />
 
-                        <div className="p-6 lg:p-8">
+                        <div className="p-5 sm:p-6 lg:p-8">
                             <button
                                 type="button"
                                 onClick={() => navigate("/login", { replace: true })}
-                                className="text-xs text-slate-700 hover:text-slate-900 underline underline-offset-4"
+                                className="inline-flex items-center gap-2 rounded-xl px-2 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-white/35 active:bg-white/45 transition
+                           focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-500/25"
                             >
-                                ← Volver
+                                <span aria-hidden="true">←</span> Volver
                             </button>
 
                             <div className="mt-4 text-center text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
@@ -155,7 +158,7 @@ export default function ChangePasswordFirstLoginPage() {
 
                                     <div className="relative">
                                         <input
-                                            className="w-full rounded-xl bg-white/60 border border-slate-300 px-4 py-3 pr-16 text-sm text-slate-900 placeholder:text-slate-500 outline-none
+                                            className="w-full rounded-xl bg-white/60 border border-slate-300 px-4 py-3 pr-12 text-sm text-slate-900 placeholder:text-slate-500 outline-none
                                  focus:border-amber-600/60 focus:ring-4 focus:ring-amber-500/20 transition-all"
                                             name="new_password"
                                             type={showNew ? "text" : "password"}
@@ -164,15 +167,17 @@ export default function ChangePasswordFirstLoginPage() {
                                             placeholder="••••••••"
                                             autoComplete="new-password"
                                             required
-                                            disabled={!userId}
+                                            disabled={!userId || loading}
                                         />
 
                                         <button
                                             type="button"
                                             onClick={() => setShowNew((v) => !v)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-600 hover:bg-white/40 hover:text-slate-900 transition-colors"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-600 hover:bg-white/40 hover:text-slate-900 active:bg-white/50 transition-colors
+                                 disabled:opacity-60 disabled:cursor-not-allowed
+                                 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-500/25"
                                             aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                            disabled={!userId}
+                                            disabled={!userId || loading}
                                         >
                                             <PasswordToggleIcon show={showNew} />
                                         </button>
@@ -187,7 +192,7 @@ export default function ChangePasswordFirstLoginPage() {
 
                                     <div className="relative">
                                         <input
-                                            className="w-full rounded-xl bg-white/60 border border-slate-300 px-4 py-3 pr-16 text-sm text-slate-900 placeholder:text-slate-500 outline-none
+                                            className="w-full rounded-xl bg-white/60 border border-slate-300 px-4 py-3 pr-12 text-sm text-slate-900 placeholder:text-slate-500 outline-none
                                  focus:border-amber-600/60 focus:ring-4 focus:ring-amber-500/20 transition-all"
                                             name="new_password_confirmation"
                                             type={showConfirm ? "text" : "password"}
@@ -196,15 +201,17 @@ export default function ChangePasswordFirstLoginPage() {
                                             placeholder="••••••••"
                                             autoComplete="new-password"
                                             required
-                                            disabled={!userId}
+                                            disabled={!userId || loading}
                                         />
 
                                         <button
                                             type="button"
                                             onClick={() => setShowConfirm((v) => !v)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-600 hover:bg-white/40 hover:text-slate-900 transition-colors"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-600 hover:bg-white/40 hover:text-slate-900 active:bg-white/50 transition-colors
+                                 disabled:opacity-60 disabled:cursor-not-allowed
+                                 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-500/25"
                                             aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                            disabled={!userId}
+                                            disabled={!userId || loading}
                                         >
                                             <PasswordToggleIcon show={showConfirm} />
                                         </button>
@@ -212,11 +219,12 @@ export default function ChangePasswordFirstLoginPage() {
                                 </div>
 
                                 <button
-                                    disabled={submitting || !userId}
-                                    className="relative w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 text-sm
+                                    disabled={submitting || !userId || loading}
+                                    className="relative w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold py-3.5 text-sm
                              shadow-[0_12px_30px_rgba(16,185,129,0.28)]
                              disabled:opacity-60 disabled:cursor-not-allowed
-                             transition-all duration-300 overflow-hidden group"
+                             transition-all duration-300 overflow-hidden group
+                             focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/25"
                                     type="submit"
                                 >
                                     <span className="relative z-10">
