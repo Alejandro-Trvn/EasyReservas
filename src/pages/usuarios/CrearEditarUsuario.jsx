@@ -96,7 +96,11 @@ export default function CrearEditarUsuario({ isOpen = false, onClose = () => { }
     }
 
     return (
-        <Modal isOpen={open} onClose={handleClose} title={editingUser ? "Editar Usuario" : "Crear Usuario"} size="md" lockScrollX>
+        <Modal isOpen={open} onClose={handleClose} title={editingUser ? "Editar Usuario" : "Crear Usuario"} size="md"
+            lockScrollX
+            headerBg="bg-emerald-700"
+            headerTextColor="text-white"
+            headerTextAlign="center">
             <ScreenLoader loading={submitting} message={editingUser ? "Guardando cambios..." : "Creando usuario..."} color="#f2f7f6" height={10} width={4} />
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>

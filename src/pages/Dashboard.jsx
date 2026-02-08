@@ -6,6 +6,7 @@ import useEstadisticas from "../services/estadisticas/useEstadisticas";
 import useUsuarios from "../services/usuarios/useUsuarios";
 import useRecursos from "../services/recursos/useRecursos";
 import UserDashboard from "./UserDashboard";
+import ScreenLoader from "../components/ScreenLoader";
 
 export default function DashboardPage() {
   const { user } = useAuth();

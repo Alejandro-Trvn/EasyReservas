@@ -211,7 +211,8 @@ export const Sidebar = () => {
           "bg-emerald-950 text-white flex flex-col shadow-xl transition-all duration-300",
           "min-h-dvh",
           // Desktop
-          "sm:relative sm:translate-x-0 sm:z-auto",
+          "sm:relative sm:translate-x-0",
+          isCollapsed ? "sm:z-[9998]" : "sm:z-auto",
           // Mobile drawer
           "fixed inset-y-0 left-0 z-50 sm:static",
           mobileDrawerOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0",
@@ -409,7 +410,7 @@ export const Sidebar = () => {
             }}
             className="hidden sm:block"
           >
-            <div className="w-56 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md text-white shadow-lg">
+            <div className="w-56 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md text-black shadow-lg">
               <div className="p-3 border-b border-white/15">
                 <div className="flex items-center gap-2 font-semibold text-amber-300">
                   {hoveredModule.icon
@@ -424,18 +425,18 @@ export const Sidebar = () => {
 
               <div className="p-3">
                 {hoveredModule.items && hoveredModule.items.length > 0 ? (
-                  <div className="space-y-2 text-sm text-white">
+                  <div className="space-y-2 text-sm text-black">
                     {hoveredModule.items.map((it) => (
                       <Link
                         key={it.path}
                         to={it.path}
                         onClick={() => setHoveredModule(null)}
-                        className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10"
+                        className="flex items-center gap-2 px-2 py-1 rounded hover:bg-green-200 transition-colors"
                       >
                         {it.icon
                           ? React.createElement(it.icon, {
                             size: 14,
-                            className: "text-white",
+                            className: "text-black",
                           })
                           : null}
                         <span className="truncate">{it.label}</span>
@@ -443,7 +444,7 @@ export const Sidebar = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-sm text-white/90 p-1">
+                  <div className="text-sm text-black/90 p-1">
                     {hoveredModule.label}
                   </div>
                 )}

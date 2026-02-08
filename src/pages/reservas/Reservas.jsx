@@ -13,9 +13,12 @@ import { FiEdit, FiTrash2 } from "react-icons/fi";
 import useReservas from "../../services/reservas/useReservas";
 import { useAuth } from "../../context/AuthContext";
 
+import ResponsiveList from "../../components/ResponsiveList";
+import useIsMobile from "../../hooks/useIsMobile";
+
 const Reservas = () => {
   const { reservas, loading, error, refetch, cancelReserva } = useReservas();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
 
   const [openCrear, setOpenCrear] = React.useState(false);
   const [editingReserva, setEditingReserva] = React.useState(null);
@@ -26,15 +29,8 @@ const Reservas = () => {
   const [statusFilter, setStatusFilter] = React.useState("active");
   const pageSize = 8;
 
-  // ✅ isMobile sin window.innerWidth en render
-  const [isMobile, setIsMobile] = React.useState(false);
-  React.useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
-    const handler = () => setIsMobile(mq.matches);
-    handler();
-    mq.addEventListener?.("change", handler);
-    return () => mq.removeEventListener?.("change", handler);
-  }, []);
+  // ✅ Opción B (reutilizable)
+  const isMobile = useIsMobile();
 
   const normalized = (searchTerm || "").toString().trim().toLowerCase();
 
@@ -86,8 +82,8 @@ const Reservas = () => {
     if (!normalized) return true;
     const recursoNombre = (r.recurso?.nombre || "").toString().toLowerCase();
     const recursoUbic = (r.recurso?.ubicacion || "").toString().toLowerCase();
-    const userName = (r.user?.name || "").toString().toLowerCase();
-    const userEmail = (r.user?.email || "").toString().toLowerCase();
+    const userName = (r.user?.name || r.usuario || r.usuario_nombre || user?.name || "").toString().toLowerCase();
+    const userEmail = (r.user?.email || r.usuario_email || user?.email || "").toString().toLowerCase();
     const comentarios = (r.comentarios || "").toString().toLowerCase();
 
     return (
@@ -148,10 +144,7 @@ const Reservas = () => {
           showAlert({
             type: "fail",
             title: "Error",
-            text:
-              err?.response?.data?.message ||
-              err?.message ||
-              "Error cancelando reserva.",
+            text: err?.response?.data?.message || err?.message || "Error cancelando reserva.",
           });
         } finally {
           setCancellingId(null);
@@ -178,8 +171,8 @@ const Reservas = () => {
       id: r.id,
       recurso: <span>{r.recurso?.nombre || "—"}</span>,
       ubicacion: r.recurso?.ubicacion || "—",
-      usuario: r.user?.name || "—",
-      email: r.user?.email || "—",
+      usuario: r.user?.name || r.usuario || r.usuario_nombre || user?.name || "—",
+      email: r.user?.email || r.usuario_email || user?.email || "—",
       fecha_inicio: formatDateTime(r.fecha_inicio),
       fecha_fin: formatDateTime(r.fecha_fin),
       comentarios: r.comentarios || "—",
@@ -261,27 +254,18 @@ const Reservas = () => {
             console.error(e);
           }
         }}
-        disableRecursoSelector={!isAdmin()}
+        disableRecursoSelector={!isAdmin() && !!editingReserva}
       />
 
       <Alert />
 
       <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 border border-gray-100">
-        <ScreenLoader
-          loading={loading}
-          message={"Cargando reservas..."}
-          color="#f2f7f6"
-          height={10}
-          width={4}
-        />
+        <ScreenLoader loading={loading} message={"Cargando reservas..."} color="#329c68"  />
 
         {error ? (
           <div className="text-red-600">
             <p>Error cargando reservas.</p>
-            <button
-              onClick={() => refetch()}
-              className="mt-2 text-sm text-blue-600 underline"
-            >
+            <button onClick={() => refetch()} className="mt-2 text-sm text-blue-600 underline">
               Reintentar
             </button>
           </div>
@@ -304,28 +288,16 @@ const Reservas = () => {
 
                   <div className="w-full overflow-x-auto">
                     <div className="inline-flex rounded-md bg-green-100 p-1 gap-1 min-w-max">
-                      <StatusBtn
-                        active={statusFilter === "all"}
-                        onClick={() => setStatusFilter("all")}
-                      >
+                      <StatusBtn active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>
                         Todas
                       </StatusBtn>
-                      <StatusBtn
-                        active={statusFilter === "active"}
-                        onClick={() => setStatusFilter("active")}
-                      >
+                      <StatusBtn active={statusFilter === "active"} onClick={() => setStatusFilter("active")}>
                         Activas
                       </StatusBtn>
-                      <StatusBtn
-                        active={statusFilter === "cancelled"}
-                        onClick={() => setStatusFilter("cancelled")}
-                      >
+                      <StatusBtn active={statusFilter === "cancelled"} onClick={() => setStatusFilter("cancelled")}>
                         Canceladas
                       </StatusBtn>
-                      <StatusBtn
-                        active={statusFilter === "finalized"}
-                        onClick={() => setStatusFilter("finalized")}
-                      >
+                      <StatusBtn active={statusFilter === "finalized"} onClick={() => setStatusFilter("finalized")}>
                         Finalizadas
                       </StatusBtn>
                     </div>
@@ -340,30 +312,36 @@ const Reservas = () => {
               </div>
             ) : (
               <>
-                {/* ✅ Mobile: cards | Desktop: tabla */}
-                {isMobile ? (
-                  <div className="px-3 pb-3 sm:px-0 sm:pb-0 space-y-3">
-                    {visible.map((r) => (
-                      <ReservaCard
-                        key={r.id}
-                        r={r}
-                        cancellingId={cancellingId}
-                        onEdit={() => handleEdit(r)}
-                        onDelete={() => handleDelete(r)}
-                        formatDateTime={formatDateTime}
-                        getFlags={getFlags}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <TablaMinimalista
-                    columns={columns}
-                    rows={rows}
-                    dotKeys={[]}
-                    bodyClassName="text-xs text-slate-700"
-                    headerBg={"bg-blue-100 border-b border-blue-600"}
-                  />
-                )}
+                {/* ✅ Mobile: cards | Desktop: tabla (Opción B) */}
+                <ResponsiveList
+                  isMobile={isMobile}
+                  mobileClassName="px-3 pb-3 space-y-3 sm:px-0 sm:pb-0"
+                  desktop={
+                    <TablaMinimalista
+                      columns={columns}
+                      rows={rows}
+                      dotKeys={[]}
+                      bodyClassName="text-xs text-slate-700"
+                      headerBg={"bg-blue-100 border-b border-blue-600"}
+                    />
+                  }
+                  mobile={
+                    <>
+                      {visible.map((r) => (
+                        <ReservaCard
+                          key={r.id}
+                          r={r}
+                          user={user}
+                          cancellingId={cancellingId}
+                          onEdit={() => handleEdit(r)}
+                          onDelete={() => handleDelete(r)}
+                          formatDateTime={formatDateTime}
+                          getFlags={getFlags}
+                        />
+                      ))}
+                    </>
+                  }
+                />
 
                 <div className="p-3 sm:p-4">
                   <Paginador
@@ -399,7 +377,7 @@ function StatusBtn({ active, onClick, children }) {
   );
 }
 
-function ReservaCard({ r, cancellingId, onEdit, onDelete, formatDateTime, getFlags }) {
+function ReservaCard({ r, user, cancellingId, onEdit, onDelete, formatDateTime, getFlags }) {
   const { isCancelled, isFinalized } = getFlags(r);
 
   const estado = isCancelled
@@ -412,12 +390,8 @@ function ReservaCard({ r, cancellingId, onEdit, onDelete, formatDateTime, getFla
     <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-base font-bold text-slate-900 truncate">
-            {r.recurso?.nombre || "—"}
-          </div>
-          <div className="mt-0.5 text-xs text-slate-500 truncate">
-            {r.recurso?.ubicacion || "—"}
-          </div>
+          <div className="text-base font-bold text-slate-900 truncate">{r.recurso?.nombre || "—"}</div>
+          <div className="mt-0.5 text-xs text-slate-500 truncate">{r.recurso?.ubicacion || "—"}</div>
         </div>
 
         <span className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full border ${estado.cls}`}>
@@ -426,8 +400,8 @@ function ReservaCard({ r, cancellingId, onEdit, onDelete, formatDateTime, getFla
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
-        <InfoLine label="Usuario" value={r.user?.name || "—"} />
-        <InfoLine label="Email" value={r.user?.email || "—"} />
+        <InfoLine label="Usuario" value={r.user?.name || r.usuario || r.usuario_nombre || user?.name || "—"} />
+        <InfoLine label="Email" value={r.user?.email || r.usuario_email || user?.email || "—"} />
         <InfoLine label="Inicio" value={formatDateTime(r.fecha_inicio)} />
         <InfoLine label="Fin" value={formatDateTime(r.fecha_fin)} />
         <InfoLine label="Comentarios" value={r.comentarios || "—"} />

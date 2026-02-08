@@ -19,6 +19,30 @@ export async function crearUsuario(payload) {
   }
 }
 
+export async function verPerfilUsuario(id) {
+  try {
+    const res = await api.get(`/usuarios/${id}`);
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function editarPerfilUsuario(payload) {
+  try {
+    // Enviar sólo los campos presentes: name es requerido en payload, email es opcional
+    const body = {};
+    if (payload == null) payload = {};
+    if (payload.name !== undefined && payload.name !== null) body.name = payload.name;
+    if (payload.email !== undefined && payload.email !== null) body.email = payload.email;
+
+    const res = await api.put(`/perfil`, body);
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function actualizarUsuario(id, payload) {
   try {
     // Enviar solo campos presentes para no sobrescribir datos no deseados.

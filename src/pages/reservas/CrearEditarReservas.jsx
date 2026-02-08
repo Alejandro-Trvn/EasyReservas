@@ -120,7 +120,10 @@ const CrearEditarReservas = ({
 
     async function handleSave() {
         const recurso_id = selectedRecurso?.value ? Number(selectedRecurso.value) : null;
-        if (!recurso_id) {
+        const isEditing = initialData && initialData.id;
+        
+        // Solo validar recurso_id si no estamos editando con selector deshabilitado
+        if (!recurso_id && (!isEditing || !disableRecursoSelector)) {
             showAlert({
                 type: "warning",
                 title: "Recurso requerido",
@@ -161,18 +164,26 @@ const CrearEditarReservas = ({
         const fecha_inicio = `${formatDateYMD(dateRange.from)} ${timeFrom}`;
         const fecha_fin = `${formatDateYMD(dateRange.to)} ${timeTo}`;
 
+        // Para usuarios normales editando: no enviar recurso_id
+        // Backend solo permite actualizar fechas y comentarios
+        const shouldIncludeRecursoId = !isEditing || !disableRecursoSelector;
+
         const payload = {
-            recurso_id,
             fecha_inicio,
             fecha_fin,
             comentarios: (comentarios || "").toString().trim() || undefined,
         };
 
+        // Solo incluir recurso_id si es permitido
+        if (shouldIncludeRecursoId) {
+            payload.recurso_id = recurso_id;
+        }
+
         try {
             setSaving(true);
 
             let result = null;
-            if (initialData && initialData.id) {
+            if (isEditing) {
                 result = await updateReserva(initialData.id, payload);
                 showAlert({
                     type: "success",
@@ -202,7 +213,7 @@ const CrearEditarReservas = ({
                 text:
                     err?.response?.data?.message ||
                     err?.message ||
-                    (initialData && initialData.id
+                    (isEditing
                         ? "Error actualizando reserva."
                         : "Error creando reserva."),
             });

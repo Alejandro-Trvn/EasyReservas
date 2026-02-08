@@ -11,14 +11,24 @@ import Button from "../../components/Button";
 import CrearEditarRecurso from "./CrearEditarRecurso";
 import useTipoRecursos from "../../services/tipoRecursos/usetipoRecursos";
 
+import ResponsiveList from "../../components/ResponsiveList";
+import useIsMobile from "../../hooks/useIsMobile";
+
 const TipoRecursosPage = () => {
 	const { tipoRecursos, loading, error, refetch, deleteTipoRecurso } = useTipoRecursos();
+
 	const [modalOpen, setModalOpen] = React.useState(false);
 	const [editing, setEditing] = React.useState(null);
+
 	const [deleting, setDeleting] = React.useState(false);
+	const [deletingId, setDeletingId] = React.useState(null);
+
 	const [searchTerm, setSearchTerm] = React.useState("");
 	const [currentPage, setCurrentPage] = React.useState(1);
 	const pageSize = 7;
+
+	// ✅ Opción B: hook reutilizable
+	const isMobile = useIsMobile();
 
 	const normalized = (searchTerm || "").toString().trim().toLowerCase();
 	const filtered = (tipoRecursos || []).filter((t) => {
@@ -34,7 +44,7 @@ const TipoRecursosPage = () => {
 	React.useEffect(() => setCurrentPage(1), [normalized]);
 	React.useEffect(() => {
 		if (currentPage > totalPages) setCurrentPage(totalPages);
-	}, [totalPages]);
+	}, [totalPages, currentPage]);
 
 	const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
@@ -96,6 +106,7 @@ const TipoRecursosPage = () => {
 			cancelText: "Cancelar",
 			onConfirm: async () => {
 				setDeleting(true);
+				setDeletingId(t.id);
 				try {
 					await deleteTipoRecurso(t.id);
 					showAlert({
@@ -108,40 +119,63 @@ const TipoRecursosPage = () => {
 					});
 					await refetch();
 				} catch (err) {
-					showAlert({ type: "fail", title: "Error", text: err?.response?.data?.message || err?.message || "Error al eliminar." });
+					showAlert({
+						type: "fail",
+						title: "Error",
+						text: err?.response?.data?.message || err?.message || "Error al eliminar.",
+					});
 				} finally {
 					setDeleting(false);
+					setDeletingId(null);
 				}
 			},
 		});
 	}
 
 	async function handleSaved(payload) {
-		// placeholder: implement create/update API call here when available
-		// for now just refetch the list so UI updates if backend changes externally
 		await refetch();
 	}
 
 	return (
-		<div className="p-6">
-			<SectionHeader title="Tipos de Recursos" subtitle="Listado de tipos de recursos" Icon={Search} />
+		<div className="space-y-5 sm:space-y-6">
+			<SectionHeader
+				title="Tipos de Recursos"
+				subtitle="Listado de tipos de recursos"
+				Icon={Search}
+				bgColor="linear-gradient(to right, #134224, #22c55e)"
+			/>
 
 			<div className="flex justify-end">
-				<Button
-					onClick={() => {
-						setEditing(null);
-						setModalOpen(true);
-					}}
-				>
-					Nuevo tipo
-				</Button>
+				<div className="w-full sm:w-auto">
+					<Button
+						onClick={() => {
+							setEditing(null);
+							setModalOpen(true);
+						}}
+						className="w-full sm:w-auto"
+					>
+						Nuevo tipo
+					</Button>
+				</div>
 			</div>
 
 			<Alert />
 
-			<div className="bg-white rounded-md shadow-md p-6 border border-gray-100 relative">
-				<ScreenLoader loading={loading} message={"Cargando tipos de recursos..."} color="#f2f7f6" height={10} width={4} />
-				<ScreenLoader loading={deleting} message={"Eliminando tipo de recurso..."} color="#f87171" height={10} width={4} />
+			<div className="bg-white rounded-xl shadow-md p-4 sm:p-6 border border-gray-100 relative">
+				<ScreenLoader
+					loading={loading}
+					message={"Cargando tipos de recursos..."}
+					color="#f2f7f6"
+					height={10}
+					width={4}
+				/>
+				<ScreenLoader
+					loading={deleting}
+					message={"Eliminando tipo de recurso..."}
+					color="#f87171"
+					height={10}
+					width={4}
+				/>
 
 				{error ? (
 					<div className="text-red-600">
@@ -152,20 +186,56 @@ const TipoRecursosPage = () => {
 					</div>
 				) : (
 					<div className="bg-white rounded-md p-0">
-						<div className="p-4">
-							<Buscador value={searchTerm} onChange={(v) => setSearchTerm(v)} placeholder={"Buscar por nombre o descripción"} />
+						<div className="p-3 sm:p-4">
+							<Buscador
+								value={searchTerm}
+								onChange={(v) => setSearchTerm(v)}
+								placeholder={"Buscar por nombre o descripción"}
+							/>
 						</div>
 
 						{totalItems === 0 ? (
-							<div className="p-12 flex flex-col items-center justify-center text-center text-gray-500">
+							<div className="p-10 sm:p-12 flex flex-col items-center justify-center text-center text-gray-500">
 								<Search size={40} className="mb-4 text-gray-400" />
 								<div className="text-lg font-medium">No se encontraron registros</div>
 							</div>
 						) : (
 							<>
-								<TablaMinimalista columns={columns} rows={rows} dotKeys={[]} bodyClassName="text-xs text-slate-700" headerBg={"bg-amber-100 border-b border-amber-600"} />
-								<div className="p-4">
-									<Paginador totalItems={totalItems} pageSize={pageSize} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
+								{/* ✅ Mobile: cards | Desktop: tabla (Opción B) */}
+								<ResponsiveList
+									isMobile={isMobile}
+									mobileClassName="px-3 pb-3 space-y-3 sm:px-0 sm:pb-0"
+									desktop={
+										<TablaMinimalista
+											columns={columns}
+											rows={rows}
+											dotKeys={[]}
+											bodyClassName="text-xs text-slate-700"
+											headerBg={"bg-blue-100 border-b border-blue-600"}
+										/>
+									}
+									mobile={
+										<>
+											{visible.map((t) => (
+												<TipoRecursoCard
+													key={t.id}
+													t={t}
+													deletingId={deletingId}
+													onEdit={() => handleEdit(t)}
+													onDelete={() => handleDelete(t)}
+												/>
+											))}
+										</>
+									}
+								/>
+
+								<div className="p-3 sm:p-4">
+									<Paginador
+										totalItems={totalItems}
+										pageSize={pageSize}
+										currentPage={currentPage}
+										onPageChange={(p) => setCurrentPage(p)}
+									/>
 								</div>
 							</>
 						)}
@@ -187,3 +257,57 @@ const TipoRecursosPage = () => {
 };
 
 export default TipoRecursosPage;
+
+/* ---------------- UI Helpers ---------------- */
+
+function TipoRecursoCard({ t, deletingId, onEdit, onDelete }) {
+	const estado =
+		t.estado === 1
+			? { text: "Activo", cls: "text-emerald-700 bg-emerald-50 border-emerald-100" }
+			: { text: "Inactivo", cls: "text-red-700 bg-red-50 border-red-100" };
+
+	return (
+		<div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4">
+			<div className="flex items-start justify-between gap-3">
+				<div className="min-w-0">
+					<div className="text-base font-bold text-slate-900 truncate">
+						{t.nombre || t.name || "—"}
+					</div>
+					<div className="mt-0.5 text-xs text-slate-500 truncate">
+						{t.descripcion || t.description || "—"}
+					</div>
+				</div>
+
+				<span className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full border ${estado.cls}`}>
+					{estado.text}
+				</span>
+			</div>
+
+			<div className="mt-4 flex items-center justify-end gap-2">
+				<button
+					onClick={onEdit}
+					className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 active:bg-sky-200 transition"
+					type="button"
+				>
+					<FiEdit />
+					Editar
+				</button>
+
+				{deletingId === t.id ? (
+					<div className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600">
+						Eliminando...
+					</div>
+				) : (
+					<button
+						onClick={onDelete}
+						className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 active:bg-red-200 transition"
+						type="button"
+					>
+						<FiTrash2 />
+						Eliminar
+					</button>
+				)}
+			</div>
+		</div>
+	);
+}

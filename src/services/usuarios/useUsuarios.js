@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { listarUsuarios, crearUsuario, eliminarUsuario } from "./usuariosService";
+import { listarUsuarios, crearUsuario, eliminarUsuario, verPerfilUsuario as verPerfilUsuarioService, editarPerfilUsuario as editarPerfilUsuarioService } from "./usuariosService";
 
 export default function useUsuarios() {
 	const [usuarios, setUsuarios] = useState([]);
@@ -56,9 +56,43 @@ export default function useUsuarios() {
 		[fetchUsuarios]
 	);
 
+	const verPerfilUsuario = useCallback(
+		async (id) => {
+			setLoading(true);
+			setError(null);
+			try {
+				const data = await verPerfilUsuarioService(id);
+				return data;
+			} catch (err) {
+				setError(err);
+				throw err;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[verPerfilUsuarioService]
+	);
+
+	const editarPerfilUsuario = useCallback(
+		async (payload) => {
+			setLoading(true);
+			setError(null);
+			try {
+				const data = await editarPerfilUsuarioService(payload);
+				return data;
+			} catch (err) {
+				setError(err);
+				throw err;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[editarPerfilUsuarioService]
+	);
+
 	useEffect(() => {
 		fetchUsuarios();
 	}, [fetchUsuarios]);
 
-	return { usuarios, loading, error, refetch: fetchUsuarios, createUsuario, deleteUsuario };
+	return { usuarios, loading, error, refetch: fetchUsuarios, createUsuario, deleteUsuario, verPerfilUsuario, editarPerfilUsuario };
 }

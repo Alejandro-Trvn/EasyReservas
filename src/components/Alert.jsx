@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle, Info, AlertTriangle, XCircle } from "lucide-react";
 import clsx from "clsx";
@@ -31,7 +31,7 @@ const CONFIG = {
 };
 
 export function showAlert(options = {}) {
-  // options: { type, title, text, confirmText, cancelText, showCancel, onConfirm, onCancel, autoClose, timeout }
+  // options: { type, title, text, confirmText, cancelText, showCancel, onConfirm, onCancel, autoClose, timeout, preventOutsideClose }
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent("app-show-alert", { detail: options }));
 }
@@ -39,13 +39,27 @@ export function showAlert(options = {}) {
 export default function Alert() {
   const [open, setOpen] = useState(false);
   const [opts, setOpts] = useState({});
+  const timerRef = useRef(null);
+  const boxRef = useRef(null);
+
+  const clearTimer = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     function handler(e) {
+      clearTimer();
+
       const payload = e.detail || {};
+      const type = payload.type || "info";
+      const cfg = CONFIG[type] || CONFIG.info;
+
       const normalized = {
-        type: payload.type || "info",
-        title: payload.title || CONFIG[payload.type || "info"].title,
+        type,
+        title: payload.title || cfg.title,
         text: payload.text || "",
         confirmText: payload.confirmText || "OK",
         cancelText: payload.cancelText || "Cancelar",
@@ -53,7 +67,7 @@ export default function Alert() {
         onConfirm: typeof payload.onConfirm === "function" ? payload.onConfirm : null,
         onCancel: typeof payload.onCancel === "function" ? payload.onCancel : null,
         autoClose: !!payload.autoClose,
-        timeout: payload.timeout || 1800,
+        timeout: Number(payload.timeout || 1800),
         preventOutsideClose: !!payload.preventOutsideClose,
       };
 
@@ -61,16 +75,47 @@ export default function Alert() {
       setOpen(true);
 
       if (normalized.autoClose) {
-        setTimeout(() => setOpen(false), normalized.timeout);
+        timerRef.current = setTimeout(() => setOpen(false), normalized.timeout);
       }
     }
 
     window.addEventListener("app-show-alert", handler);
-    return () => window.removeEventListener("app-show-alert", handler);
+    return () => {
+      clearTimer();
+      window.removeEventListener("app-show-alert", handler);
+    };
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        // ESC = cancelar/cerrar (no confirma)
+        if (!opts.preventOutsideClose) handleClose(false);
+      }
+    };
+
+    const onMouseDown = (e) => {
+      if (opts.preventOutsideClose) return;
+      if (!boxRef.current) return;
+      if (!boxRef.current.contains(e.target)) handleClose(false);
+    };
+
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("mousedown", onMouseDown);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousedown", onMouseDown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, opts.preventOutsideClose]);
+
   function handleClose(confirmed = false) {
+    clearTimer();
     setOpen(false);
+
+    // Ejecutar callbacks después de cerrar
     if (confirmed && opts.onConfirm) opts.onConfirm();
     if (!confirmed && opts.onCancel) opts.onCancel();
   }
@@ -82,27 +127,37 @@ export default function Alert() {
   const Icon = cfg.icon;
 
   return createPortal(
-    <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-3">
-      <div className="relative z-10 max-w-xs w-full">
-        <div className={clsx(cfg.bg, "rounded-lg shadow-md p-3")}> 
+    <div
+      className={clsx(
+        "fixed z-[9999] px-4",
+        // ✅ Desktop: top-right | Mobile: bottom-center
+        "top-4 right-0 sm:right-4 sm:top-4",
+        "bottom-4 sm:bottom-auto",
+        "left-0 sm:left-auto",
+        "flex justify-center sm:justify-end"
+      )}
+    >
+      <div ref={boxRef} className="w-full sm:w-[360px] max-w-full">
+        <div className={clsx(cfg.bg, "rounded-2xl shadow-lg p-4 border border-white/40")}>
           <div className="flex items-start gap-3">
-            <div className={clsx("p-2 rounded-full bg-white/20")}> 
+            <div className={clsx("p-2 rounded-full bg-white/40")}>
               <Icon className={clsx(cfg.iconColor, "w-5 h-5")} />
             </div>
 
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-gray-900">{opts.title}</h3>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-extrabold text-gray-900">{opts.title}</h3>
               {opts.text && (
-                <p className="mt-1 text-sm text-gray-800">{opts.text}</p>
+                <p className="mt-1 text-sm text-gray-800 break-words">{opts.text}</p>
               )}
             </div>
           </div>
 
-          <div className="mt-3 flex justify-end gap-2">
+          <div className="mt-4 flex justify-end gap-2">
             {opts.showCancel && (
               <button
                 onClick={() => handleClose(false)}
-                className="px-3 py-1 rounded-md bg-white/30 text-gray-800 hover:bg-white/40"
+                className="px-3 py-2 rounded-xl bg-white/50 text-gray-800 hover:bg-white/70 text-sm font-semibold"
+                type="button"
               >
                 {opts.cancelText}
               </button>
@@ -110,7 +165,8 @@ export default function Alert() {
 
             <button
               onClick={() => handleClose(true)}
-              className="px-3 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
+              className="px-3 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-sm font-extrabold"
+              type="button"
             >
               {opts.confirmText}
             </button>

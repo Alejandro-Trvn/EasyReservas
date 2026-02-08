@@ -1,5 +1,5 @@
 // src/pages/UserDashboard.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Home, Users, Activity } from "lucide-react";
 import SectionHeader from "../components/SectionHeader";
@@ -17,9 +17,25 @@ export default function UserDashboard() {
 
   const totalReservas = historico?.total_reservas ?? 0;
   const reservasActivas = historico?.reservas_activas ?? 0;
-  const recursosReservados = Array.isArray(historico?.reservas)
-    ? new Set(historico.reservas.map((r) => r.recurso)).size
-    : 0;
+
+  // ✅ robusto: cuenta recursos por ID (si existe), si no por nombre/string
+  const recursosReservados = useMemo(() => {
+    const reservas = Array.isArray(historico?.reservas) ? historico.reservas : [];
+    const keys = reservas
+      .map((r) => {
+        const rec = r?.recurso;
+        if (!rec) return null;
+
+        // si viene objeto {id, nombre}
+        if (typeof rec === "object") return rec.id ?? rec.nombre ?? rec.name ?? null;
+
+        // si viene string
+        return String(rec);
+      })
+      .filter(Boolean);
+
+    return new Set(keys).size;
+  }, [historico?.reservas]);
 
   const Spinner = () => (
     <svg
@@ -63,6 +79,7 @@ export default function UserDashboard() {
           Icon={Activity}
           iconBg="bg-blue-50"
           iconColor="text-blue-600"
+          loading={historicoLoading}
         />
 
         <MetricCard
@@ -71,6 +88,7 @@ export default function UserDashboard() {
           Icon={Users}
           iconBg="bg-amber-50"
           iconColor="text-amber-600"
+          loading={historicoLoading}
         />
 
         <MetricCard
@@ -79,6 +97,7 @@ export default function UserDashboard() {
           Icon={Home}
           iconBg="bg-emerald-50"
           iconColor="text-emerald-600"
+          loading={historicoLoading}
         />
       </div>
 
@@ -97,13 +116,24 @@ export default function UserDashboard() {
   );
 }
 
-function MetricCard({ label, value, Icon, iconBg, iconColor }) {
+function MetricCard({ label, value, Icon, iconBg, iconColor, loading = false }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-5 sm:p-6 border border-gray-100 hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="text-gray-500 text-xs sm:text-sm font-medium">{label}</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
+
+          {/* ✅ mejor alineación si el valor es spinner */}
+          <div className="mt-2">
+            <div
+              className={clsx(
+                "text-3xl font-bold text-gray-900",
+                loading ? "flex items-center" : ""
+              )}
+            >
+              {value}
+            </div>
+          </div>
         </div>
 
         <div className={clsx(iconBg, "p-3 rounded-xl shrink-0")}>

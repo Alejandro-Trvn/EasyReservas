@@ -14,9 +14,11 @@ import VerificarDisponibilidad from "./VerificarDisponibilidad";
 import useRecursos from "../../services/recursos/useRecursos";
 import { useAuth } from "../../context/AuthContext";
 
+import ResponsiveList from "../../components/ResponsiveList";
+import useIsMobile from "../../hooks/useIsMobile";
+
 const Recursos = () => {
-  const { recursos, loading, error, refetch, updateRecurso, deleteRecurso } =
-    useRecursos();
+  const { recursos, loading, error, refetch, updateRecurso, deleteRecurso } = useRecursos();
   const { user, role: contextRole } = useAuth();
 
   const role = (contextRole || user?.role || "").toString().toLowerCase();
@@ -36,28 +38,18 @@ const Recursos = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
   const pageSize = 7;
 
-  // ✅ isMobile sin window.innerWidth en render (igual que Reservas)
-  const [isMobile, setIsMobile] = React.useState(false);
-  React.useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
-    const handler = () => setIsMobile(mq.matches);
-    handler();
-    mq.addEventListener?.("change", handler);
-    return () => mq.removeEventListener?.("change", handler);
-  }, []);
+  // ✅ Reutilizable (Opción B)
+  const isMobile = useIsMobile();
 
   const normalized = (searchTerm || "").toString().trim().toLowerCase();
 
   const filtered = (recursos || []).filter((r) => {
     if (!normalized) return true;
+
     const nombre = (r.nombre || r.name || "").toString().toLowerCase();
-    const descripcion = (r.descripcion || r.description || "")
-      .toString()
-      .toLowerCase();
+    const descripcion = (r.descripcion || r.description || "").toString().toLowerCase();
     const ubicacion = (r.ubicacion || "").toString().toLowerCase();
-    const tipo = (r.tipo_recurso?.nombre || r.tipo_recurso?.name || "")
-      .toString()
-      .toLowerCase();
+    const tipo = (r.tipo_recurso?.nombre || r.tipo_recurso?.name || "").toString().toLowerCase();
 
     return (
       nombre.includes(normalized) ||
@@ -75,10 +67,7 @@ const Recursos = () => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [totalPages, currentPage]);
 
-  const visible = filtered.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   function handleEdit(r) {
     setEditingResource(r);
@@ -113,10 +102,7 @@ const Recursos = () => {
           showAlert({
             type: "fail",
             title: "Error",
-            text:
-              err?.response?.data?.message ||
-              err?.message ||
-              "Error eliminando recurso.",
+            text: err?.response?.data?.message || err?.message || "Error eliminando recurso.",
           });
         } finally {
           setProcessing(false);
@@ -131,12 +117,7 @@ const Recursos = () => {
     { key: "tipo", title: "Tipo" },
     { key: "ubicacion", title: "Ubicación" },
     { key: "capacidad", title: "Capacidad", align: "center", width: "90px" },
-    {
-      key: "disponibilidad",
-      title: "Disponibilidad",
-      align: "center",
-      width: "120px",
-    },
+    { key: "disponibilidad", title: "Disponibilidad", align: "center", width: "120px" },
     { key: "descripcion", title: "Descripción" },
     { key: "estado", title: "Estado", align: "center", width: "100px" },
   ];
@@ -145,6 +126,7 @@ const Recursos = () => {
     ? [...baseColumns, { key: "actions", title: "Acciones", align: "center", width: "160px" }]
     : baseColumns;
 
+  // Desktop rows (Tabla)
   const rows = (visible || []).map((r) => {
     const row = {
       id: r.id,
@@ -230,13 +212,7 @@ const Recursos = () => {
       <Alert />
 
       <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 border border-gray-100 relative">
-        <ScreenLoader
-          loading={loading}
-          message={"Cargando recursos..."}
-          color="#f2f7f6"
-          height={10}
-          width={4}
-        />
+        <ScreenLoader loading={loading} message={"Cargando recursos..."} color="#329c68" />
 
         {error ? (
           <div className="text-red-600">
@@ -262,31 +238,36 @@ const Recursos = () => {
               </div>
             ) : (
               <>
-                {/* ✅ Mobile: cards | Desktop: tabla (igual que Reservas) */}
-                {isMobile ? (
-                  <div className="px-3 pb-3 sm:px-0 sm:pb-0 space-y-3">
-                    {visible.map((r) => (
-                      <RecursoCard
-                        key={r.id}
-                        r={r}
-                        isViewer={isViewer}
-                        isAdmin={isAdmin}
-                        deletingId={deletingId}
-                        onView={() => handleViewAvailability(r)}
-                        onEdit={() => handleEdit(r)}
-                        onDelete={() => handleDelete(r)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <TablaMinimalista
-                    columns={columns}
-                    rows={rows}
-                    dotKeys={[]}
-                    bodyClassName="text-xs text-slate-700"
-                    headerBg={"bg-blue-100 border-b border-blue-600"}
-                  />
-                )}
+                {/* ✅ Mobile: cards | Desktop: tabla (Opción B) */}
+                <ResponsiveList
+                  isMobile={isMobile}
+                  mobileClassName="px-3 pb-3 space-y-3 sm:px-0 sm:pb-0"
+                  desktop={
+                    <TablaMinimalista
+                      columns={columns}
+                      rows={rows}
+                      dotKeys={[]}
+                      bodyClassName="text-xs text-slate-700"
+                      headerBg={"bg-blue-100 border-b border-blue-600"}
+                    />
+                  }
+                  mobile={
+                    <>
+                      {visible.map((r) => (
+                        <RecursoCard
+                          key={r.id}
+                          r={r}
+                          isViewer={isViewer}
+                          isAdmin={isAdmin}
+                          deletingId={deletingId}
+                          onView={() => handleViewAvailability(r)}
+                          onEdit={() => handleEdit(r)}
+                          onDelete={() => handleDelete(r)}
+                        />
+                      ))}
+                    </>
+                  }
+                />
 
                 <div className="p-3 sm:p-4">
                   <Paginador
@@ -330,19 +311,14 @@ const Recursos = () => {
                     showAlert({
                       type: "success",
                       title: "Recurso creado",
-                      text: nombre
-                        ? `Recurso ${nombre} creado correctamente.`
-                        : `Recurso creado correctamente.`,
+                      text: nombre ? `Recurso ${nombre} creado correctamente.` : `Recurso creado correctamente.`,
                     });
                   }
                 } catch (err) {
                   showAlert({
                     type: "fail",
                     title: "Error",
-                    text:
-                      err?.response?.data?.message ||
-                      err?.message ||
-                      "Error guardando recurso.",
+                    text: err?.response?.data?.message || err?.message || "Error guardando recurso.",
                   });
                 } finally {
                   setProcessing(false);
@@ -362,7 +338,6 @@ const Recursos = () => {
             />
 
             <ScreenLoader loading={processing} message={"Guardando cambios..."} />
-
           </div>
         )}
       </div>
@@ -372,7 +347,7 @@ const Recursos = () => {
 
 export default Recursos;
 
-/* ---------------- UI Helpers ---------------- */
+/* ---------------- Mobile Card ---------------- */
 
 function RecursoCard({ r, isViewer, isAdmin, deletingId, onView, onEdit, onDelete }) {
   const estado =
@@ -413,10 +388,10 @@ function RecursoCard({ r, isViewer, isAdmin, deletingId, onView, onEdit, onDelet
       </div>
 
       {isViewer && (
-        <div className="mt-4 flex items-center justify-end gap-2">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
           <button
             onClick={onView}
-            className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 transition"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 transition"
             type="button"
           >
             <FiEye />
@@ -427,7 +402,7 @@ function RecursoCard({ r, isViewer, isAdmin, deletingId, onView, onEdit, onDelet
             <>
               <button
                 onClick={onEdit}
-                className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 active:bg-sky-200 transition"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 active:bg-sky-200 transition"
                 type="button"
               >
                 <FiEdit />
@@ -435,13 +410,13 @@ function RecursoCard({ r, isViewer, isAdmin, deletingId, onView, onEdit, onDelet
               </button>
 
               {deletingId === r.id ? (
-                <div className="px-3 py-2 rounded-xl border border-gray-200">
+                <div className="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-200 flex items-center justify-center">
                   <ClipLoader size={18} color="#059669" />
                 </div>
               ) : (
                 <button
                   onClick={onDelete}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 active:bg-red-200 transition"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 active:bg-red-200 transition"
                   type="button"
                 >
                   <FiTrash2 />
@@ -456,13 +431,12 @@ function RecursoCard({ r, isViewer, isAdmin, deletingId, onView, onEdit, onDelet
   );
 }
 
+
 function InfoLine({ label, value }) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="text-xs font-semibold text-slate-500 shrink-0">{label}:</div>
-      <div className="text-sm text-slate-800 text-right break-words min-w-0">
-        {value}
-      </div>
+      <div className="text-sm text-slate-800 text-right break-words min-w-0">{value}</div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { X } from "lucide-react";
 
 export const Modal = ({
@@ -19,55 +19,80 @@ export const Modal = ({
     headerTextColor = "text-gray-900",
     headerTextAlign = "left", // "left" | "center" | "right"
 
-    // ✅ NUEVO: altura máxima del modal (útil si quieres variar)
+    // altura máxima del modal
     maxHeightClassName = "max-h-[85dvh]",
 }) => {
-    if (!isOpen) return null;
+    const sizeClasses = useMemo(
+        () => ({
+            sm: "max-w-md",
+            md: "max-w-lg",
+            lg: "max-w-2xl",
+            xl: "max-w-4xl",
+        }),
+        []
+    );
 
-    const sizeClasses = {
-        sm: "max-w-md",
-        md: "max-w-lg",
-        lg: "max-w-2xl",
-        xl: "max-w-4xl",
-    };
+    const getScrollbarWidth = () =>
+        Math.max(0, window.innerWidth - document.documentElement.clientWidth);
 
-    // ✅ Bloquear scroll del body cuando el modal esté abierto
+    // ✅ FIX: bloquear/restaurar scroll del body según isOpen (robusto + sin layout jump)
     useEffect(() => {
-        const prevOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
+        if (!isOpen) return;
+
+        const body = document.body;
+
+        // guardar estilos previos
+        const prevOverflow = body.style.overflow;
+        const prevPaddingRight = body.style.paddingRight;
+
+        // compensar scrollbar para que no "salte" el layout
+        const sbw = getScrollbarWidth();
+        body.style.overflow = "hidden";
+        if (sbw > 0) body.style.paddingRight = `${sbw}px`;
+
+        // iOS/Touch: evita scroll por swipe en background
+        const preventTouchMove = (e) => e.preventDefault();
+        body.addEventListener("touchmove", preventTouchMove, { passive: false });
+
         return () => {
-            document.body.style.overflow = prevOverflow;
+            body.style.overflow = prevOverflow;
+            body.style.paddingRight = prevPaddingRight;
+            body.removeEventListener("touchmove", preventTouchMove);
         };
-    }, []);
+    }, [isOpen]);
 
-    // ✅ Cerrar con ESC
+    // ✅ Cerrar con ESC (solo cuando está abierto)
     useEffect(() => {
+        if (!isOpen) return;
+
         const onKey = (e) => {
             if (e.key === "Escape") onClose?.();
         };
+
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [onClose]);
+    }, [isOpen, onClose]);
+
+    if (!isOpen) return null;
 
     const titleClasses = ["text-xl font-bold", headerTextColor].join(" ");
 
-    // Header alignment
+    const headerBase = [
+        "border-b border-gray-100 rounded-t-2xl",
+        "px-4 py-4 sm:px-6 sm:py-6",
+        headerBg,
+    ].join(" ");
+
+    const subtitleClass = "text-sm text-white/70 mt-2";
+
     const Header = (() => {
         // center
         if (headerTextAlign === "center") {
-            const headerClasses = [
-                "relative border-b border-gray-100 rounded-t-2xl",
-                "px-4 py-4 sm:px-6 sm:py-6",
-                headerBg,
-            ].join(" ");
-
             return (
-                <div className={headerClasses}>
+                <div className={`relative ${headerBase}`}>
                     <div className="w-full text-center">
                         <h3 className={titleClasses}>{title}</h3>
-                        {subtitle && (
-                            <div className="text-sm text-gray-700 mt-1">{subtitle}</div>
-                        )}
+                        {subtitle && <div className={subtitleClass}>{subtitle}</div>}
                     </div>
 
                     <button
@@ -84,19 +109,11 @@ export const Modal = ({
 
         // right
         if (headerTextAlign === "right") {
-            const headerClasses = [
-                "flex items-center justify-end border-b border-gray-100 rounded-t-2xl",
-                "px-4 py-4 sm:px-6 sm:py-6",
-                headerBg,
-            ].join(" ");
-
             return (
-                <div className={headerClasses}>
+                <div className={`flex items-center justify-end ${headerBase}`}>
                     <div className="text-right mr-4">
                         <h3 className={titleClasses}>{title}</h3>
-                        {subtitle && (
-                            <div className="text-sm text-gray-700 mt-1">{subtitle}</div>
-                        )}
+                        {subtitle && <div className={subtitleClass}>{subtitle}</div>}
                     </div>
 
                     <button
@@ -112,23 +129,22 @@ export const Modal = ({
         }
 
         // default left
-        const headerClasses = [
-            "flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-100 rounded-t-2xl",
-            "px-4 py-4 sm:px-6 sm:py-6",
-            headerBg,
-        ].join(" ");
-
         return (
-            <div className={headerClasses}>
+            <div
+                className={[
+                    "flex flex-col sm:flex-row items-start sm:items-center justify-between",
+                    headerBase,
+                ].join(" ")}
+            >
                 <div className="text-left">
                     <h3 className={titleClasses}>{title}</h3>
-                    {subtitle && <div className="text-sm text-gray-700 mt-1">{subtitle}</div>}
+                    {subtitle && <div className={subtitleClass}>{subtitle}</div>}
                 </div>
 
                 <button
                     type="button"
                     onClick={onClose}
-                    className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg mt-3 sm:mt-0"
+                    className="text-white/70 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg mt-3 sm:mt-0"
                     aria-label="Cerrar"
                 >
                     <X size={20} />
@@ -159,14 +175,13 @@ export const Modal = ({
             <div
                 className={[
                     "relative w-full",
-                    sizeClasses[size],
+                    sizeClasses[size] || sizeClasses.md,
                     "bg-white rounded-2xl shadow-xl",
                     "transform transition-all",
-                    maxHeightClassName, // ✅ alto máximo en dvh
-                    "flex flex-col",    // ✅ header fijo + body scrolleable
+                    maxHeightClassName,
+                    "flex flex-col",
                     wrapperClassName,
                 ].join(" ")}
-                // Evita que el click dentro cierre el modal
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
