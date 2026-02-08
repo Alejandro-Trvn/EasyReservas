@@ -169,11 +169,9 @@ export default function VerificarDisponibilidad({ isOpen, onClose, recurso }) {
         onClose={onClose}
         title="Verificar disponibilidad"
         size="lg"
-        lockScrollX
         headerBg="bg-emerald-700"
         headerTextColor="text-white"
         headerTextAlign="center"
-        contentClassName="p-4 sm:p-6"
       >
         {/* ✅ loader dentro del modal (evita overlays duplicados) */}
         <ScreenLoader loading={loading} message="Consultando disponibilidad..." />

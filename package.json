@@ -8,21 +8,25 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "make:structure": "node scripts/make-structure.mjs"
+    "make:structure": "node scripts/make-structure.mjs",
+    "build:android": "vite build --mode android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.0.2",
+    "@capacitor/cli": "^8.0.2",
+    "@capacitor/core": "^8.0.2",
     "axios": "^1.13.2",
+    "chart.js": "^4.4.0",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
+    "react-chartjs-2": "^5.2.0",
     "react-dom": "^19.2.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.11.0",
     "react-select": "^5.10.2",
     "react-spinners": "^0.17.0",
-    "react-chartjs-2": "^5.2.0",
-    "chart.js": "^4.4.0",
-    "chartjs-plugin-datalabels": "^2.2.0",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

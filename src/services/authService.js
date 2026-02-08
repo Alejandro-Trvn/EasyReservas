@@ -17,14 +17,15 @@ function normalizeRole(role) {
 
 export async function login(email, password) {
     try {
+        // (Opcional) Ver con qué URL está apuntando tu app
+        console.log("LOGIN -> baseURL:", api?.defaults?.baseURL);
+
         const { data } = await api.post("/login", { email, password });
 
-        // Caso normal: retorna token + user
         const token = data?.access_token;
         if (token) {
             localStorage.setItem("access_token", token);
 
-            // opcional: guardar user parcial si viene
             if (data?.user) {
                 localStorage.setItem("auth_user", JSON.stringify(data.user));
                 if (data.user.role !== undefined) {
@@ -32,7 +33,6 @@ export async function login(email, password) {
                 }
             }
 
-            // si el backend incluye role en la respuesta principal
             if (data?.role !== undefined) {
                 localStorage.setItem("auth_role", normalizeRole(data.role));
             }
@@ -45,7 +45,15 @@ export async function login(email, password) {
         const status = err?.response?.status;
         const payload = err?.response?.data;
 
-        // Caso especial: must_change_password (tu backend responde 403 con data útil)
+        // ✅ Logs para Android Studio (Logcat)
+        console.log("LOGIN ERROR -> message:", err?.message);
+        console.log("LOGIN ERROR -> status:", status);
+        console.log("LOGIN ERROR -> payload:", payload);
+
+        // ✅ Esto ayuda mucho cuando es "Network Error"
+        console.log("LOGIN ERROR -> url:", err?.config?.baseURL + (err?.config?.url || ""));
+        console.log("LOGIN ERROR -> method:", err?.config?.method);
+
         if (status === 403 && payload?.must_change_password) {
             return {
                 ok: false,
@@ -65,6 +73,7 @@ export async function login(email, password) {
         };
     }
 }
+
 
 export async function me() {
     const { data } = await api.get("/me");

@@ -51,7 +51,15 @@ export const Modal = ({
         if (sbw > 0) body.style.paddingRight = `${sbw}px`;
 
         // iOS/Touch: evita scroll por swipe en background
-        const preventTouchMove = (e) => e.preventDefault();
+        // pero permite scroll dentro del modal
+        const preventTouchMove = (e) => {
+            // Permitir scroll si el evento viene del modal o sus descendientes
+            const modalContent = document.querySelector('[data-modal-content]');
+            if (modalContent && modalContent.contains(e.target)) {
+                return;
+            }
+            e.preventDefault();
+        };
         body.addEventListener("touchmove", preventTouchMove, { passive: false });
 
         return () => {
@@ -173,6 +181,7 @@ export const Modal = ({
 
             {/* Modal container */}
             <div
+                data-modal-content
                 className={[
                     "relative w-full",
                     sizeClasses[size] || sizeClasses.md,
@@ -195,6 +204,7 @@ export const Modal = ({
                         lockScrollX ? "overflow-x-hidden" : "",
                         contentClassName,
                     ].join(" ")}
+                    style={{ WebkitOverflowScrolling: 'touch' }}
                 >
                     {children}
                 </div>

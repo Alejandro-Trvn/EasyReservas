@@ -1,0 +1,9 @@
+{
+  "appId": "com.ucsg.easyreservas",
+  "appName": "EasyReservas",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}
